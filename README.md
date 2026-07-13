@@ -59,7 +59,9 @@ curl -X POST localhost:8080/api/exchanges -H 'Content-Type: application/json' \
 
 ## Architecture et garanties
 
-- `api.go` : routage, JSON, codes HTTP et middlewares CORS/logging/recovery/timeout.
+- `api.go` : construction de l'API, routage et réponses JSON.
+- `handlers_users.go`, `handlers_services.go` et `handlers_exchanges.go` : handlers HTTP séparés par domaine.
+- `middleware.go` : CORS, logs, récupération des paniques et timeout des requêtes.
 - `store.go` : accès SQL et transactions contenant les règles métier atomiques.
 - `models.go` et `errors.go` : domaine et erreurs sentinelles.
 - `schema.sql` : contraintes, index et journal de crédits.

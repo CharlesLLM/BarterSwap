@@ -10,16 +10,25 @@ import (
 	"github.com/lib/pq"
 )
 
-type Store struct{ db *sql.DB }
+type Store struct {
+	db *sql.DB
+}
 
-func NewStore(db *sql.DB) *Store { return &Store{db: db} }
+func NewStore(db *sql.DB) *Store {
+	return &Store{db: db}
+}
+
 func scanErr(err error) error {
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotFound
 	}
 	return err
 }
-func isUnique(err error) bool { var e *pq.Error; return errors.As(err, &e) && e.Code == "23505" }
+
+func isUniqueViolation(err error) bool {
+	var pqErr *pq.Error
+	return errors.As(err, &pqErr) && pqErr.Code == "23505"
+}
 
 func (s *Store) CreateUser(ctx context.Context, u User) (User, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -27,33 +36,61 @@ func (s *Store) CreateUser(ctx context.Context, u User) (User, error) {
 		return u, err
 	}
 	defer tx.Rollback()
-	err = tx.QueryRowContext(ctx, `INSERT INTO users(pseudo,bio,ville) VALUES($1,$2,$3) RETURNING id,created_at`, u.Pseudo, u.Bio, u.Ville).Scan(&u.ID, &u.CreatedAt)
-	if isUnique(err) {
+	err = tx.QueryRowContext(
+		ctx,
+		`INSERT INTO users(pseudo,bio,ville) VALUES($1,$2,$3) RETURNING id,created_at`,
+		u.Pseudo,
+		u.Bio,
+		u.Ville,
+	).Scan(&u.ID, &u.CreatedAt)
+	if isUniqueViolation(err) {
 		return u, fmt.Errorf("%w: pseudo déjà utilisé", ErrConflict)
 	}
 	if err != nil {
 		return u, err
 	}
-	if _, err = tx.ExecContext(ctx, `INSERT INTO credit_transactions(user_id,montant,type) VALUES($1,10,'welcome')`, u.ID); err != nil {
+	_, err = tx.ExecContext(
+		ctx,
+		`INSERT INTO credit_transactions(user_id,montant,type) VALUES($1,10,'welcome')`,
+		u.ID,
+	)
+	if err != nil {
 		return u, err
 	}
-	if err = tx.Commit(); err == nil {
-		u.CreditBalance = 10
+	if err = tx.Commit(); err != nil {
+		return u, err
 	}
-	return u, err
+	u.CreditBalance = 10
+	return u, nil
 }
+
 func (s *Store) User(ctx context.Context, id int64) (User, error) {
 	var u User
-	err := s.db.QueryRowContext(ctx, `SELECT u.id,u.pseudo,u.bio,u.ville,COALESCE(sum(c.montant),0),u.created_at FROM users u LEFT JOIN credit_transactions c ON c.user_id=u.id WHERE u.id=$1 GROUP BY u.id`, id).Scan(&u.ID, &u.Pseudo, &u.Bio, &u.Ville, &u.CreditBalance, &u.CreatedAt)
+	const query = `
+		SELECT u.id, u.pseudo, u.bio, u.ville, COALESCE(sum(c.montant), 0), u.created_at
+		FROM users u
+		LEFT JOIN credit_transactions c ON c.user_id = u.id
+		WHERE u.id = $1
+		GROUP BY u.id`
+	err := s.db.QueryRowContext(ctx, query, id).Scan(
+		&u.ID,
+		&u.Pseudo,
+		&u.Bio,
+		&u.Ville,
+		&u.CreditBalance,
+		&u.CreatedAt,
+	)
 	if err != nil {
 		return u, scanErr(err)
 	}
 	u.Skills, err = s.Skills(ctx, id)
 	return u, err
 }
+
 func (s *Store) UpdateUser(ctx context.Context, u User) (User, error) {
-	err := s.db.QueryRowContext(ctx, `UPDATE users SET pseudo=$2,bio=$3,ville=$4 WHERE id=$1 RETURNING created_at`, u.ID, u.Pseudo, u.Bio, u.Ville).Scan(&u.CreatedAt)
-	if isUnique(err) {
+	const query = `UPDATE users SET pseudo=$2, bio=$3, ville=$4 WHERE id=$1 RETURNING created_at`
+	err := s.db.QueryRowContext(ctx, query, u.ID, u.Pseudo, u.Bio, u.Ville).Scan(&u.CreatedAt)
+	if isUniqueViolation(err) {
 		return u, fmt.Errorf("%w: pseudo déjà utilisé", ErrConflict)
 	}
 	if err != nil {
@@ -61,9 +98,11 @@ func (s *Store) UpdateUser(ctx context.Context, u User) (User, error) {
 	}
 	return s.User(ctx, u.ID)
 }
+
 func (s *Store) Skills(ctx context.Context, id int64) ([]Skill, error) {
 	var exists bool
-	if err := s.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE id=$1)`, id).Scan(&exists); err != nil {
+	err := s.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE id=$1)`, id).Scan(&exists)
+	if err != nil {
 		return nil, err
 	}
 	if !exists {
@@ -84,6 +123,7 @@ func (s *Store) Skills(ctx context.Context, id int64) ([]Skill, error) {
 	}
 	return out, rows.Err()
 }
+
 func (s *Store) ReplaceSkills(ctx context.Context, id int64, skills []Skill) error {
 	tx, e := s.db.BeginTx(ctx, nil)
 	if e != nil {
@@ -94,7 +134,10 @@ func (s *Store) ReplaceSkills(ctx context.Context, id int64, skills []Skill) err
 	if e != nil {
 		return e
 	}
-	n, _ := r.RowsAffected()
+	n, err := r.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if n == 0 {
 		var ok bool
 		e = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE id=$1)`, id).Scan(&ok)
@@ -105,46 +148,91 @@ func (s *Store) ReplaceSkills(ctx context.Context, id int64, skills []Skill) err
 			return ErrNotFound
 		}
 	}
-	for _, v := range skills {
-		if _, e = tx.ExecContext(ctx, `INSERT INTO skills(user_id,nom,niveau) VALUES($1,$2,$3)`, id, v.Nom, v.Niveau); e != nil {
+	for _, skill := range skills {
+		_, e = tx.ExecContext(
+			ctx,
+			`INSERT INTO skills(user_id,nom,niveau) VALUES($1,$2,$3)`,
+			id,
+			skill.Nom,
+			skill.Niveau,
+		)
+		if e != nil {
 			return e
 		}
 	}
 	return tx.Commit()
 }
+
 func (s *Store) HasSkill(ctx context.Context, id int64, name string) (bool, error) {
 	var ok bool
-	err := s.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM skills WHERE user_id=$1 AND lower(nom)=lower($2))`, id, name).Scan(&ok)
+	const query = `SELECT EXISTS(SELECT 1 FROM skills WHERE user_id=$1 AND lower(nom)=lower($2))`
+	err := s.db.QueryRowContext(ctx, query, id, name).Scan(&ok)
 	return ok, err
 }
 
 const serviceCols = `id,provider_id,titre,description,categorie,duree_minutes,credits,ville,actif,created_at`
 
 func scanService(row interface{ Scan(...any) error }) (Service, error) {
-	var v Service
-	e := row.Scan(&v.ID, &v.ProviderID, &v.Titre, &v.Description, &v.Categorie, &v.DureeMinutes, &v.Credits, &v.Ville, &v.Actif, &v.CreatedAt)
-	return v, scanErr(e)
+	var service Service
+	err := row.Scan(
+		&service.ID,
+		&service.ProviderID,
+		&service.Titre,
+		&service.Description,
+		&service.Categorie,
+		&service.DureeMinutes,
+		&service.Credits,
+		&service.Ville,
+		&service.Actif,
+		&service.CreatedAt,
+	)
+	return service, scanErr(err)
 }
+
 func (s *Store) CreateService(ctx context.Context, v Service) (Service, error) {
-	return scanService(s.db.QueryRowContext(ctx, `INSERT INTO services(provider_id,titre,description,categorie,duree_minutes,credits,ville) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING `+serviceCols, v.ProviderID, v.Titre, v.Description, v.Categorie, v.DureeMinutes, v.Credits, v.Ville))
+	const query = `
+		INSERT INTO services(provider_id,titre,description,categorie,duree_minutes,credits,ville)
+		VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING `
+	row := s.db.QueryRowContext(
+		ctx, query+serviceCols, v.ProviderID, v.Titre, v.Description,
+		v.Categorie, v.DureeMinutes, v.Credits, v.Ville,
+	)
+	return scanService(row)
 }
+
 func (s *Store) Service(ctx context.Context, id int64) (Service, error) {
-	return scanService(s.db.QueryRowContext(ctx, `SELECT `+serviceCols+` FROM services WHERE id=$1`, id))
+	row := s.db.QueryRowContext(ctx, `SELECT `+serviceCols+` FROM services WHERE id=$1`, id)
+	return scanService(row)
 }
+
 func (s *Store) UpdateService(ctx context.Context, v Service) (Service, error) {
-	return scanService(s.db.QueryRowContext(ctx, `UPDATE services SET titre=$2,description=$3,categorie=$4,duree_minutes=$5,credits=$6,ville=$7,actif=$8 WHERE id=$1 RETURNING `+serviceCols, v.ID, v.Titre, v.Description, v.Categorie, v.DureeMinutes, v.Credits, v.Ville, v.Actif))
+	const query = `
+		UPDATE services
+		SET titre=$2, description=$3, categorie=$4, duree_minutes=$5,
+			credits=$6, ville=$7, actif=$8
+		WHERE id=$1 RETURNING `
+	row := s.db.QueryRowContext(
+		ctx, query+serviceCols, v.ID, v.Titre, v.Description,
+		v.Categorie, v.DureeMinutes, v.Credits, v.Ville, v.Actif,
+	)
+	return scanService(row)
 }
+
 func (s *Store) DeleteService(ctx context.Context, id int64) error {
 	r, e := s.db.ExecContext(ctx, `UPDATE services SET actif=false WHERE id=$1`, id)
 	if e != nil {
 		return e
 	}
-	n, _ := r.RowsAffected()
+	n, e := r.RowsAffected()
+	if e != nil {
+		return e
+	}
 	if n == 0 {
 		return ErrNotFound
 	}
 	return nil
 }
+
 func (s *Store) Services(ctx context.Context, f ServiceFilter) ([]Service, error) {
 	q := `SELECT ` + serviceCols + ` FROM services WHERE actif=true`
 	args := []any{}
@@ -180,10 +268,19 @@ func (s *Store) Services(ctx context.Context, f ServiceFilter) ([]Service, error
 const exchangeCols = `id,service_id,requester_id,owner_id,status,created_at,updated_at`
 
 func scanExchange(row interface{ Scan(...any) error }) (v Exchange, e error) {
-	e = row.Scan(&v.ID, &v.ServiceID, &v.RequesterID, &v.OwnerID, &v.Status, &v.CreatedAt, &v.UpdatedAt)
+	e = row.Scan(
+		&v.ID,
+		&v.ServiceID,
+		&v.RequesterID,
+		&v.OwnerID,
+		&v.Status,
+		&v.CreatedAt,
+		&v.UpdatedAt,
+	)
 	e = scanErr(e)
 	return
 }
+
 func (s *Store) CreateExchange(ctx context.Context, serviceID, requesterID int64) (Exchange, error) {
 	tx, e := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if e != nil {
@@ -193,7 +290,11 @@ func (s *Store) CreateExchange(ctx context.Context, serviceID, requesterID int64
 	var owner int64
 	var credits int
 	var active bool
-	e = tx.QueryRowContext(ctx, `SELECT provider_id,credits,actif FROM services WHERE id=$1 FOR UPDATE`, serviceID).Scan(&owner, &credits, &active)
+	e = tx.QueryRowContext(
+		ctx,
+		`SELECT provider_id,credits,actif FROM services WHERE id=$1 FOR UPDATE`,
+		serviceID,
+	).Scan(&owner, &credits, &active)
 	if e != nil {
 		return Exchange{}, scanErr(e)
 	}
@@ -204,15 +305,23 @@ func (s *Store) CreateExchange(ctx context.Context, serviceID, requesterID int64
 		return Exchange{}, fmt.Errorf("%w: impossible de réserver son propre service", ErrInvalid)
 	}
 	var balance int
-	e = tx.QueryRowContext(ctx, `SELECT COALESCE(sum(montant),0) FROM credit_transactions WHERE user_id=$1`, requesterID).Scan(&balance)
+	e = tx.QueryRowContext(
+		ctx,
+		`SELECT COALESCE(sum(montant),0) FROM credit_transactions WHERE user_id=$1`,
+		requesterID,
+	).Scan(&balance)
 	if e != nil {
 		return Exchange{}, e
 	}
 	if balance < credits {
 		return Exchange{}, ErrInsufficientCredits
 	}
-	v, e := scanExchange(tx.QueryRowContext(ctx, `INSERT INTO exchanges(service_id,requester_id,owner_id,status) VALUES($1,$2,$3,'pending') RETURNING `+exchangeCols, serviceID, requesterID, owner))
-	if isUnique(e) {
+	const insertExchange = `
+		INSERT INTO exchanges(service_id,requester_id,owner_id,status)
+		VALUES($1,$2,$3,'pending') RETURNING `
+	row := tx.QueryRowContext(ctx, insertExchange+exchangeCols, serviceID, requesterID, owner)
+	v, e := scanExchange(row)
+	if isUniqueViolation(e) {
 		return v, fmt.Errorf("%w: service déjà réservé", ErrConflict)
 	}
 	if e != nil {
@@ -220,9 +329,11 @@ func (s *Store) CreateExchange(ctx context.Context, serviceID, requesterID int64
 	}
 	return v, tx.Commit()
 }
+
 func (s *Store) Exchange(ctx context.Context, id int64) (Exchange, error) {
 	return scanExchange(s.db.QueryRowContext(ctx, `SELECT `+exchangeCols+` FROM exchanges WHERE id=$1`, id))
 }
+
 func (s *Store) Exchanges(ctx context.Context, user int64, status string) ([]Exchange, error) {
 	q := `SELECT ` + exchangeCols + ` FROM exchanges WHERE (requester_id=$1 OR owner_id=$1)`
 	a := []any{user}
@@ -246,6 +357,7 @@ func (s *Store) Exchanges(ctx context.Context, user int64, status string) ([]Exc
 	}
 	return out, rows.Err()
 }
+
 func (s *Store) Transition(ctx context.Context, id, user int64, action string) (Exchange, error) {
 	tx, e := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if e != nil {
@@ -267,59 +379,82 @@ func (s *Store) Transition(ctx context.Context, id, user int64, action string) (
 		if user != v.OwnerID {
 			return v, ErrForbidden
 		}
-		if v.Status != "pending" {
+		if v.Status != StatusPending {
 			return v, ErrInvalid
 		}
 		var bal int
-		e = tx.QueryRowContext(ctx, `SELECT COALESCE(sum(montant),0) FROM credit_transactions WHERE user_id=$1`, v.RequesterID).Scan(&bal)
+		e = tx.QueryRowContext(
+			ctx,
+			`SELECT COALESCE(sum(montant),0) FROM credit_transactions WHERE user_id=$1`,
+			v.RequesterID,
+		).Scan(&bal)
 		if e != nil {
 			return v, e
 		}
 		if bal < credits {
 			return v, ErrInsufficientCredits
 		}
-		_, e = tx.ExecContext(ctx, `INSERT INTO credit_transactions(user_id,exchange_id,montant,type) VALUES($1,$2,$3,'spend')`, v.RequesterID, v.ID, -credits)
-		next = "accepted"
+		_, e = tx.ExecContext(
+			ctx,
+			`INSERT INTO credit_transactions(user_id,exchange_id,montant,type) VALUES($1,$2,$3,'spend')`,
+			v.RequesterID, v.ID, -credits,
+		)
+		next = StatusAccepted
 	case "reject":
 		if user != v.OwnerID {
 			return v, ErrForbidden
 		}
-		if v.Status != "pending" {
+		if v.Status != StatusPending {
 			return v, ErrInvalid
 		}
-		next = "rejected"
+		next = StatusRejected
 	case "complete":
 		if user != v.RequesterID && user != v.OwnerID {
 			return v, ErrForbidden
 		}
-		if v.Status != "accepted" {
+		if v.Status != StatusAccepted {
 			return v, ErrInvalid
 		}
-		_, e = tx.ExecContext(ctx, `INSERT INTO credit_transactions(user_id,exchange_id,montant,type) VALUES($1,$2,$3,'earn')`, v.OwnerID, v.ID, credits)
-		next = "completed"
+		_, e = tx.ExecContext(
+			ctx,
+			`INSERT INTO credit_transactions(user_id,exchange_id,montant,type) VALUES($1,$2,$3,'earn')`,
+			v.OwnerID, v.ID, credits,
+		)
+		next = StatusCompleted
 	case "cancel":
 		if user != v.RequesterID && user != v.OwnerID {
 			return v, ErrForbidden
 		}
-		if v.Status != "pending" && v.Status != "accepted" {
+		if v.Status != StatusPending && v.Status != StatusAccepted {
 			return v, ErrInvalid
 		}
-		if v.Status == "accepted" {
-			_, e = tx.ExecContext(ctx, `INSERT INTO credit_transactions(user_id,exchange_id,montant,type) VALUES($1,$2,$3,'refund')`, v.RequesterID, v.ID, credits)
+		if v.Status == StatusAccepted {
+			_, e = tx.ExecContext(
+				ctx,
+				`INSERT INTO credit_transactions(user_id,exchange_id,montant,type) VALUES($1,$2,$3,'refund')`,
+				v.RequesterID, v.ID, credits,
+			)
 		}
-		next = "cancelled"
+		next = StatusCancelled
 	default:
 		return v, ErrInvalid
 	}
 	if e != nil {
 		return v, e
 	}
-	v, e = scanExchange(tx.QueryRowContext(ctx, `UPDATE exchanges SET status=$2,updated_at=now() WHERE id=$1 RETURNING `+exchangeCols, id, next))
+	row := tx.QueryRowContext(
+		ctx,
+		`UPDATE exchanges SET status=$2,updated_at=now() WHERE id=$1 RETURNING `+exchangeCols,
+		id,
+		next,
+	)
+	v, e = scanExchange(row)
 	if e != nil {
 		return v, e
 	}
 	return v, tx.Commit()
 }
+
 func (s *Store) CreateReview(ctx context.Context, r Review) (Review, error) {
 	var ex Exchange
 	var e error
@@ -327,7 +462,7 @@ func (s *Store) CreateReview(ctx context.Context, r Review) (Review, error) {
 	if e != nil {
 		return r, e
 	}
-	if ex.Status != "completed" {
+	if ex.Status != StatusCompleted {
 		return r, fmt.Errorf("%w: échange non terminé", ErrInvalid)
 	}
 	if r.AuthorID != ex.RequesterID && r.AuthorID != ex.OwnerID {
@@ -338,19 +473,30 @@ func (s *Store) CreateReview(ctx context.Context, r Review) (Review, error) {
 	} else {
 		r.TargetID = ex.RequesterID
 	}
-	e = s.db.QueryRowContext(ctx, `INSERT INTO reviews(exchange_id,author_id,target_id,note,commentaire) VALUES($1,$2,$3,$4,$5) RETURNING id,created_at`, r.ExchangeID, r.AuthorID, r.TargetID, r.Note, r.Commentaire).Scan(&r.ID, &r.CreatedAt)
-	if isUnique(e) {
+	const query = `
+		INSERT INTO reviews(exchange_id,author_id,target_id,note,commentaire)
+		VALUES($1,$2,$3,$4,$5) RETURNING id,created_at`
+	e = s.db.QueryRowContext(
+		ctx, query, r.ExchangeID, r.AuthorID, r.TargetID, r.Note, r.Commentaire,
+	).Scan(&r.ID, &r.CreatedAt)
+	if isUniqueViolation(e) {
 		return r, fmt.Errorf("%w: avis déjà publié", ErrInvalid)
 	}
 	return r, e
 }
+
 func (s *Store) Reviews(ctx context.Context, where string, id int64) ([]Review, error) {
 	allowed := map[string]string{"user": "target_id", "service": "e.service_id"}
 	col, ok := allowed[where]
 	if !ok {
 		return nil, ErrInvalid
 	}
-	q := `SELECT r.id,r.exchange_id,r.author_id,r.target_id,r.note,r.commentaire,r.created_at FROM reviews r JOIN exchanges e ON e.id=r.exchange_id WHERE ` + col + `=$1 ORDER BY r.created_at DESC`
+	q := `
+		SELECT r.id,r.exchange_id,r.author_id,r.target_id,r.note,r.commentaire,r.created_at
+		FROM reviews r
+		JOIN exchanges e ON e.id=r.exchange_id
+		WHERE ` + col + `=$1
+		ORDER BY r.created_at DESC`
 	rows, e := s.db.QueryContext(ctx, q, id)
 	if e != nil {
 		return nil, e
@@ -359,17 +505,44 @@ func (s *Store) Reviews(ctx context.Context, where string, id int64) ([]Review, 
 	out := []Review{}
 	for rows.Next() {
 		var r Review
-		if e = rows.Scan(&r.ID, &r.ExchangeID, &r.AuthorID, &r.TargetID, &r.Note, &r.Commentaire, &r.CreatedAt); e != nil {
+		e = rows.Scan(
+			&r.ID,
+			&r.ExchangeID,
+			&r.AuthorID,
+			&r.TargetID,
+			&r.Note,
+			&r.Commentaire,
+			&r.CreatedAt,
+		)
+		if e != nil {
 			return nil, e
 		}
 		out = append(out, r)
 	}
 	return out, rows.Err()
 }
+
 func (s *Store) Stats(ctx context.Context, id int64) (UserStats, error) {
 	var x UserStats
 	x.UserID = id
-	e := s.db.QueryRowContext(ctx, `SELECT (SELECT count(*) FROM services WHERE provider_id=$1 AND actif), (SELECT count(*) FROM exchanges WHERE status='completed' AND (requester_id=$1 OR owner_id=$1)), COALESCE((SELECT sum(montant) FROM credit_transactions WHERE user_id=$1),0), COALESCE((SELECT avg(note) FROM reviews WHERE target_id=$1),0), (SELECT count(*) FROM reviews WHERE target_id=$1), COALESCE((SELECT sum(montant) FROM credit_transactions WHERE user_id=$1 AND type='earn'),0), COALESCE(-(SELECT sum(montant) FROM credit_transactions WHERE user_id=$1 AND type='spend'),0)`, id).Scan(&x.ServicesActifs, &x.EchangesCompletes, &x.CreditBalance, &x.NoteMoyenne, &x.NbAvis, &x.TotalGagne, &x.TotalDepense)
+	const query = `
+		SELECT
+			(SELECT count(*) FROM services WHERE provider_id=$1 AND actif),
+			(SELECT count(*) FROM exchanges WHERE status='completed' AND (requester_id=$1 OR owner_id=$1)),
+			COALESCE((SELECT sum(montant) FROM credit_transactions WHERE user_id=$1),0),
+			COALESCE((SELECT avg(note) FROM reviews WHERE target_id=$1),0),
+			(SELECT count(*) FROM reviews WHERE target_id=$1),
+			COALESCE((SELECT sum(montant) FROM credit_transactions WHERE user_id=$1 AND type='earn'),0),
+			COALESCE(-(SELECT sum(montant) FROM credit_transactions WHERE user_id=$1 AND type='spend'),0)`
+	e := s.db.QueryRowContext(ctx, query, id).Scan(
+		&x.ServicesActifs,
+		&x.EchangesCompletes,
+		&x.CreditBalance,
+		&x.NoteMoyenne,
+		&x.NbAvis,
+		&x.TotalGagne,
+		&x.TotalDepense,
+	)
 	if e != nil {
 		return x, e
 	}
@@ -382,6 +555,9 @@ func (s *Store) Stats(ctx context.Context, id int64) (UserStats, error) {
 }
 
 func validStatus(v string) bool {
-	return v == "pending" || v == "accepted" || v == "rejected" || v == "cancelled" || v == "completed"
+	return v == StatusPending || v == StatusAccepted || v == StatusRejected || v == StatusCancelled || v == StatusCompleted
 }
-func clean(v string) string { return strings.TrimSpace(v) }
+
+func clean(v string) string {
+	return strings.TrimSpace(v)
+}

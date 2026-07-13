@@ -38,6 +38,11 @@ func main() {
 		addr = ":8080"
 	}
 	log.Printf("BarterSwap écoute sur %s", addr)
-	srv := &http.Server{Addr: addr, Handler: NewAPI(NewStore(db), log.Default()), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second}
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           NewAPI(NewStore(db), log.Default()),
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
 	log.Fatal(srv.ListenAndServe())
 }

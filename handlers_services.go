@@ -53,7 +53,11 @@ func (a *API) services(w http.ResponseWriter, r *http.Request, path []string) {
 
 func (a *API) listServices(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
-	filter := ServiceFilter{Categorie: query.Get("categorie"), Ville: query.Get("ville"), Search: query.Get("search")}
+	filter := ServiceFilter{
+		Categorie: query.Get("categorie"),
+		Ville:     query.Get("ville"),
+		Search:    query.Get("search"),
+	}
 	services, err := a.store.Services(r.Context(), filter)
 	if err != nil {
 		a.fail(w, err)
@@ -104,6 +108,10 @@ func (a *API) updateService(w http.ResponseWriter, r *http.Request, current Serv
 		a.fail(w, err)
 		return
 	}
+	if err = a.ensureProviderSkill(r, service); err != nil {
+		a.fail(w, err)
+		return
+	}
 	updated, err := a.store.UpdateService(r.Context(), service)
 	if err != nil {
 		a.fail(w, err)
@@ -137,7 +145,8 @@ func (a *API) ensureProviderSkill(r *http.Request, service Service) error {
 }
 
 func validateService(service Service) error {
-	if clean(service.Titre) == "" || !categories[service.Categorie] || service.DureeMinutes < 1 || service.Credits < 1 {
+	_, validCategory := categories[service.Categorie]
+	if clean(service.Titre) == "" || !validCategory || service.DureeMinutes < 1 || service.Credits < 1 {
 		return fmt.Errorf("%w: titre, catégorie, durée et crédits requis", ErrInvalid)
 	}
 	return nil

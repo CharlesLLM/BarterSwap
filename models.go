@@ -11,10 +11,12 @@ type User struct {
 	CreditBalance int       `json:"credit_balance"`
 	CreatedAt     time.Time `json:"created_at"`
 }
+
 type Skill struct {
 	Nom    string `json:"nom"`
 	Niveau string `json:"niveau"`
 }
+
 type Service struct {
 	ID           int64     `json:"id"`
 	ProviderID   int64     `json:"provider_id"`
@@ -27,6 +29,7 @@ type Service struct {
 	Actif        bool      `json:"actif"`
 	CreatedAt    time.Time `json:"created_at"`
 }
+
 type Exchange struct {
 	ID          int64     `json:"id"`
 	ServiceID   int64     `json:"service_id"`
@@ -36,6 +39,7 @@ type Exchange struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
+
 type Review struct {
 	ID          int64     `json:"id"`
 	ExchangeID  int64     `json:"exchange_id"`
@@ -45,6 +49,7 @@ type Review struct {
 	Commentaire string    `json:"commentaire,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 }
+
 type UserStats struct {
 	UserID            int64   `json:"user_id"`
 	ServicesActifs    int     `json:"services_actifs"`
@@ -55,6 +60,33 @@ type UserStats struct {
 	TotalGagne        int     `json:"total_gagne"`
 	TotalDepense      int     `json:"total_depense"`
 }
-type ServiceFilter struct{ Categorie, Ville, Search string }
 
-var categories = map[string]bool{"Informatique": true, "Jardinage": true, "Bricolage": true, "Cuisine": true, "Musique": true, "Langues": true, "Sport": true, "Tutorat": true, "Déménagement": true, "Photographie": true, "Animalier": true, "Couture": true, "Autre": true}
+type ServiceFilter struct {
+	Categorie string
+	Ville     string
+	Search    string
+}
+
+const (
+	StatusPending   = "pending"
+	StatusAccepted  = "accepted"
+	StatusRejected  = "rejected"
+	StatusCancelled = "cancelled"
+	StatusCompleted = "completed"
+)
+
+var categories = map[string]struct{}{
+	"Informatique": {},
+	"Jardinage":    {},
+	"Bricolage":    {},
+	"Cuisine":      {},
+	"Musique":      {},
+	"Langues":      {},
+	"Sport":        {},
+	"Tutorat":      {},
+	"Déménagement": {},
+	"Photographie": {},
+	"Animalier":    {},
+	"Couture":      {},
+	"Autre":        {},
+}

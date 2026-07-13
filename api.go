@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,13 +11,49 @@ import (
 	"strings"
 )
 
+// UserRepository décrit uniquement les opérations utilisateur consommées par l'API.
+type UserRepository interface {
+	CreateUser(context.Context, User) (User, error)
+	User(context.Context, int64) (User, error)
+	UpdateUser(context.Context, User) (User, error)
+	Skills(context.Context, int64) ([]Skill, error)
+	ReplaceSkills(context.Context, int64, []Skill) error
+	Stats(context.Context, int64) (UserStats, error)
+}
+
+// ServiceRepository décrit les opérations liées aux annonces.
+type ServiceRepository interface {
+	CreateService(context.Context, Service) (Service, error)
+	Service(context.Context, int64) (Service, error)
+	UpdateService(context.Context, Service) (Service, error)
+	DeleteService(context.Context, int64) error
+	Services(context.Context, ServiceFilter) ([]Service, error)
+	HasSkill(context.Context, int64, string) (bool, error)
+}
+
+// ExchangeRepository décrit les opérations liées aux échanges et aux avis.
+type ExchangeRepository interface {
+	CreateExchange(context.Context, int64, int64) (Exchange, error)
+	Exchange(context.Context, int64) (Exchange, error)
+	Exchanges(context.Context, int64, string) ([]Exchange, error)
+	Transition(context.Context, int64, int64, string) (Exchange, error)
+	CreateReview(context.Context, Review) (Review, error)
+	Reviews(context.Context, string, int64) ([]Review, error)
+}
+
+type Repository interface {
+	UserRepository
+	ServiceRepository
+	ExchangeRepository
+}
+
 // API contient les dépendances de la couche HTTP.
 type API struct {
-	store  *Store
+	store  Repository
 	logger *log.Logger
 }
 
-func NewAPI(store *Store, logger *log.Logger) http.Handler {
+func NewAPI(store Repository, logger *log.Logger) http.Handler {
 	a := &API{store: store, logger: logger}
 	return a.middleware(http.HandlerFunc(a.route))
 }
@@ -97,10 +134,14 @@ func authenticatedUserID(r *http.Request) (int64, error) {
 	return id, nil
 }
 
-func pathSegments(path string) []string { return strings.Split(strings.Trim(path, "/"), "/") }
+func pathSegments(path string) []string {
+	return strings.Split(strings.Trim(path, "/"), "/")
+}
+
 func (a *API) methodNotAllowed(w http.ResponseWriter) {
 	writeJSON(w, http.StatusMethodNotAllowed, apiError{"méthode non autorisée"})
 }
+
 func (a *API) notFound(w http.ResponseWriter) {
 	writeJSON(w, http.StatusNotFound, apiError{"route introuvable"})
 }

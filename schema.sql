@@ -13,3 +13,10 @@ CREATE TABLE IF NOT EXISTS credit_transactions (
     type TEXT NOT NULL CHECK (type IN ('welcome', 'earn', 'spend', 'refund')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS skills (
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    nom TEXT NOT NULL,
+    niveau TEXT NOT NULL CHECK (niveau IN ('débutant', 'intermédiaire', 'expert')),
+    PRIMARY KEY (user_id, nom)
+);

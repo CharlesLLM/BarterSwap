@@ -8,8 +8,19 @@ import (
 	"os"
 	"time"
 
-	"github.com/lib/pq"
+	_ "github.com/lib/pq"
 )
+
+const uniqueViolationSQLState = "23505"
+
+type sqlStateError interface {
+	SQLState() string
+}
+
+func hasSQLState(err error, state string) bool {
+	var stateError sqlStateError
+	return errors.As(err, &stateError) && stateError.SQLState() == state
+}
 
 type Store struct {
 	db *sql.DB
@@ -70,8 +81,7 @@ func (store *Store) InsertUser(ctx context.Context, input CreateUserInput) (User
 	).Scan(&user.ID, &user.Pseudo, &user.Bio, &user.Ville, &createdAt)
 
 	if err != nil {
-		var pqError *pq.Error
-		if errors.As(err, &pqError) && pqError.Code == "23505" {
+		if hasSQLState(err, uniqueViolationSQLState) {
 			return User{}, ErrPseudoAlreadyExists
 		}
 
@@ -198,8 +208,7 @@ func (store *Store) UpdateUser(ctx context.Context, id int, input CreateUserInpu
 	)
 
 	if err != nil {
-		var pqError *pq.Error
-		if errors.As(err, &pqError) && pqError.Code == "23505" {
+		if hasSQLState(err, uniqueViolationSQLState) {
 			return User{}, ErrPseudoAlreadyExists
 		}
 

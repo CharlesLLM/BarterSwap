@@ -55,3 +55,24 @@ type ServiceFilter struct {
 	Ville     string
 	Search    string
 }
+
+func IsValidServiceCategory(category string) bool {
+	switch category {
+	case CategoryInformatique,
+		CategoryJardinage,
+		CategoryBricolage,
+		CategoryCuisine,
+		CategoryMusique,
+		CategoryLangues,
+		CategorySport,
+		CategoryTutorat,
+		CategoryDemenagement,
+		CategoryPhotographie,
+		CategoryAnimalier,
+		CategoryCouture,
+		CategoryAutre:
+		return true
+	default:
+		return false
+	}
+}

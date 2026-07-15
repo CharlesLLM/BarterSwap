@@ -8,12 +8,12 @@ import (
 )
 
 type UserRepository interface {
-	InsertUser(context.Context, domain.CreateUserInput) (domain.User, error)
-	SelectUsers(context.Context) ([]domain.User, error)
-	SelectUser(context.Context, int) (domain.User, error)
+	CreateUser(context.Context, domain.CreateUserInput) (domain.User, error)
+	ListUsers(context.Context) ([]domain.User, error)
+	FindUser(context.Context, int) (domain.User, error)
 	UpdateUser(context.Context, int, domain.CreateUserInput) (domain.User, error)
 	DeleteUser(context.Context, int) error
-	SelectSkills(context.Context, int) ([]domain.Skill, error)
+	ListSkills(context.Context, int) ([]domain.Skill, error)
 	ReplaceSkills(context.Context, int, []domain.Skill) error
 }
 
@@ -31,15 +31,15 @@ func (service *UserService) Create(ctx context.Context, input domain.CreateUserI
 		return domain.User{}, domain.ErrPseudoRequired
 	}
 
-	return service.repository.InsertUser(ctx, input)
+	return service.repository.CreateUser(ctx, input)
 }
 
 func (service *UserService) List(ctx context.Context) ([]domain.User, error) {
-	return service.repository.SelectUsers(ctx)
+	return service.repository.ListUsers(ctx)
 }
 
 func (service *UserService) Get(ctx context.Context, id int) (domain.User, error) {
-	return service.repository.SelectUser(ctx, id)
+	return service.repository.FindUser(ctx, id)
 }
 
 func (service *UserService) Update(ctx context.Context, id int, input domain.CreateUserInput) (domain.User, error) {
@@ -55,8 +55,8 @@ func (service *UserService) Delete(ctx context.Context, id int) error {
 	return service.repository.DeleteUser(ctx, id)
 }
 
-func (service *UserService) Skills(ctx context.Context, id int) ([]domain.Skill, error) {
-	return service.repository.SelectSkills(ctx, id)
+func (service *UserService) ListSkills(ctx context.Context, id int) ([]domain.Skill, error) {
+	return service.repository.ListSkills(ctx, id)
 }
 
 func (service *UserService) ReplaceSkills(ctx context.Context, id int, skills []domain.Skill) ([]domain.Skill, error) {
@@ -70,7 +70,7 @@ func (service *UserService) ReplaceSkills(ctx context.Context, id int, skills []
 			return nil, domain.ErrSkillNameRequired
 		}
 
-		if !validSkillLevel(skills[index].Niveau) {
+		if !domain.IsValidSkillLevel(skills[index].Niveau) {
 			return nil, domain.ErrSkillLevelInvalid
 		}
 
@@ -93,8 +93,4 @@ func cleanUserInput(input domain.CreateUserInput) domain.CreateUserInput {
 	input.Bio = strings.TrimSpace(input.Bio)
 	input.Ville = strings.TrimSpace(input.Ville)
 	return input
-}
-
-func validSkillLevel(level string) bool {
-	return level == "débutant" || level == "intermédiaire" || level == "expert"
 }

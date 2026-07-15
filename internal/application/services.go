@@ -8,23 +8,23 @@ import (
 )
 
 type ServiceRepository interface {
-	InsertService(context.Context, int, domain.CreateServiceInput) (domain.Service, error)
-	SelectServices(context.Context, domain.ServiceFilter) ([]domain.Service, error)
-	SelectService(context.Context, int) (domain.Service, error)
+	CreateService(context.Context, int, domain.CreateServiceInput) (domain.Service, error)
+	ListServices(context.Context, domain.ServiceFilter) ([]domain.Service, error)
+	FindService(context.Context, int) (domain.Service, error)
 	UpdateService(context.Context, int, domain.CreateServiceInput) (domain.Service, error)
 	DeactivateService(context.Context, int) error
-	SelectSkills(context.Context, int) ([]domain.Skill, error)
+	ListSkills(context.Context, int) ([]domain.Skill, error)
 }
 
-type ServiceService struct {
+type CatalogService struct {
 	repository ServiceRepository
 }
 
-func NewServiceService(repository ServiceRepository) *ServiceService {
-	return &ServiceService{repository: repository}
+func NewCatalogService(repository ServiceRepository) *CatalogService {
+	return &CatalogService{repository: repository}
 }
 
-func (service *ServiceService) Create(ctx context.Context, providerID int, input domain.CreateServiceInput) (domain.Service, error) {
+func (service *CatalogService) Create(ctx context.Context, providerID int, input domain.CreateServiceInput) (domain.Service, error) {
 	input = cleanServiceInput(input)
 	if err := validateServiceInput(input); err != nil {
 		return domain.Service{}, err
@@ -34,32 +34,32 @@ func (service *ServiceService) Create(ctx context.Context, providerID int, input
 		return domain.Service{}, err
 	}
 
-	return service.repository.InsertService(ctx, providerID, input)
+	return service.repository.CreateService(ctx, providerID, input)
 }
 
-func (service *ServiceService) List(ctx context.Context, filter domain.ServiceFilter) ([]domain.Service, error) {
+func (service *CatalogService) List(ctx context.Context, filter domain.ServiceFilter) ([]domain.Service, error) {
 	filter.Categorie = strings.TrimSpace(filter.Categorie)
 	filter.Ville = strings.TrimSpace(filter.Ville)
 	filter.Search = strings.TrimSpace(filter.Search)
 
-	if filter.Categorie != "" && !validServiceCategory(filter.Categorie) {
+	if filter.Categorie != "" && !domain.IsValidServiceCategory(filter.Categorie) {
 		return nil, domain.ErrServiceCategoryInvalid
 	}
 
-	return service.repository.SelectServices(ctx, filter)
+	return service.repository.ListServices(ctx, filter)
 }
 
-func (service *ServiceService) Get(ctx context.Context, id int) (domain.Service, error) {
-	return service.repository.SelectService(ctx, id)
+func (service *CatalogService) Get(ctx context.Context, id int) (domain.Service, error) {
+	return service.repository.FindService(ctx, id)
 }
 
-func (service *ServiceService) Update(ctx context.Context, userID, id int, input domain.CreateServiceInput) (domain.Service, error) {
+func (service *CatalogService) Update(ctx context.Context, userID, id int, input domain.CreateServiceInput) (domain.Service, error) {
 	input = cleanServiceInput(input)
 	if err := validateServiceInput(input); err != nil {
 		return domain.Service{}, err
 	}
 
-	existingService, err := service.repository.SelectService(ctx, id)
+	existingService, err := service.repository.FindService(ctx, id)
 	if err != nil {
 		return domain.Service{}, err
 	}
@@ -75,8 +75,8 @@ func (service *ServiceService) Update(ctx context.Context, userID, id int, input
 	return service.repository.UpdateService(ctx, id, input)
 }
 
-func (service *ServiceService) Delete(ctx context.Context, userID, id int) error {
-	existingService, err := service.repository.SelectService(ctx, id)
+func (service *CatalogService) Delete(ctx context.Context, userID, id int) error {
+	existingService, err := service.repository.FindService(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func validateServiceInput(input domain.CreateServiceInput) error {
 	if input.Titre == "" {
 		return domain.ErrServiceTitleRequired
 	}
-	if !validServiceCategory(input.Categorie) {
+	if !domain.IsValidServiceCategory(input.Categorie) {
 		return domain.ErrServiceCategoryInvalid
 	}
 	if input.DureeMinutes <= 0 {
@@ -112,29 +112,8 @@ func validateServiceInput(input domain.CreateServiceInput) error {
 	return nil
 }
 
-func validServiceCategory(category string) bool {
-	switch category {
-	case domain.CategoryInformatique,
-		domain.CategoryJardinage,
-		domain.CategoryBricolage,
-		domain.CategoryCuisine,
-		domain.CategoryMusique,
-		domain.CategoryLangues,
-		domain.CategorySport,
-		domain.CategoryTutorat,
-		domain.CategoryDemenagement,
-		domain.CategoryPhotographie,
-		domain.CategoryAnimalier,
-		domain.CategoryCouture,
-		domain.CategoryAutre:
-		return true
-	default:
-		return false
-	}
-}
-
-func (service *ServiceService) checkProviderSkill(ctx context.Context, providerID int, category string) error {
-	skills, err := service.repository.SelectSkills(ctx, providerID)
+func (service *CatalogService) checkProviderSkill(ctx context.Context, providerID int, category string) error {
+	skills, err := service.repository.ListSkills(ctx, providerID)
 	if err != nil {
 		return err
 	}

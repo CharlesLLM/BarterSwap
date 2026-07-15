@@ -36,8 +36,8 @@ func main() {
 	}
 
 	userService := application.NewUserService(store)
-	serviceService := application.NewServiceService(store)
-	handler := httpapi.NewHandler(userService, serviceService)
+	catalogService := application.NewCatalogService(store)
+	handler := httpapi.NewHandler(userService, catalogService)
 
 	server := &http.Server{
 		Addr:              ":8080",

@@ -41,6 +41,20 @@ go run ./cmd/api
 
 ## Tests
 
+Depuis la racine du projet :
+
 ```bash
 go test ./...
+```
+
+Pour afficher le nom et le résultat de chaque test :
+
+```bash
+go test -v ./...
+```
+
+Pour afficher la couverture :
+
+```bash
+go test -cover ./...
 ```

@@ -7,7 +7,7 @@ import (
 	"github.com/CharlesLLM/BarterSwap/internal/domain"
 )
 
-func TestValidateServiceInput(t *testing.T) {
+func TestValidateServiceInput(testContext *testing.T) {
 	validInput := domain.CreateServiceInput{
 		Titre:        "Initiation au jardinage",
 		Categorie:    domain.CategoryJardinage,
@@ -28,19 +28,10 @@ func TestValidateServiceInput(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testContext.Run(test.name, func(testCaseContext *testing.T) {
 			if err := validateServiceInput(test.input); !errors.Is(err, test.want) {
-				t.Fatalf("validateServiceInput() error = %v, want %v", err, test.want)
+				testCaseContext.Fatalf("validateServiceInput() error = %v, want %v", err, test.want)
 			}
 		})
-	}
-}
-
-func TestValidServiceCategory(t *testing.T) {
-	if !validServiceCategory(domain.CategoryInformatique) {
-		t.Fatal("la catégorie Informatique devrait être valide")
-	}
-	if validServiceCategory("Inconnue") {
-		t.Fatal("une catégorie inconnue ne devrait pas être valide")
 	}
 }

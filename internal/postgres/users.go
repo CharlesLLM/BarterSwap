@@ -10,7 +10,7 @@ import (
 	"github.com/CharlesLLM/BarterSwap/internal/domain"
 )
 
-func (store *Store) InsertUser(ctx context.Context, input domain.CreateUserInput) (domain.User, error) {
+func (store *Store) CreateUser(ctx context.Context, input domain.CreateUserInput) (domain.User, error) {
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
 		return domain.User{}, fmt.Errorf("début de la transaction : %w", err)
@@ -54,7 +54,7 @@ func (store *Store) InsertUser(ctx context.Context, input domain.CreateUserInput
 	return user, nil
 }
 
-func (store *Store) SelectUsers(ctx context.Context) ([]domain.User, error) {
+func (store *Store) ListUsers(ctx context.Context) ([]domain.User, error) {
 	rows, err := store.db.QueryContext(ctx, `SELECT u.id, u.pseudo, u.bio, u.ville,
 		COALESCE(SUM(c.montant), 0), u.created_at
 		FROM users u
@@ -82,7 +82,7 @@ func (store *Store) SelectUsers(ctx context.Context) ([]domain.User, error) {
 	return users, nil
 }
 
-func (store *Store) SelectUser(ctx context.Context, id int) (domain.User, error) {
+func (store *Store) FindUser(ctx context.Context, id int) (domain.User, error) {
 	var user domain.User
 	var createdAt time.Time
 	err := store.db.QueryRowContext(ctx, `SELECT u.id, u.pseudo, u.bio, u.ville,
@@ -106,7 +106,7 @@ func (store *Store) SelectUser(ctx context.Context, id int) (domain.User, error)
 	}
 
 	user.CreatedAt = createdAt.UTC().Format(time.RFC3339)
-	user.Skills, err = store.SelectSkills(ctx, id)
+	user.Skills, err = store.ListSkills(ctx, id)
 	if err != nil {
 		return domain.User{}, err
 	}
@@ -131,7 +131,7 @@ func (store *Store) UpdateUser(ctx context.Context, id int, input domain.CreateU
 	if updatedRows == 0 {
 		return domain.User{}, domain.ErrUserNotFound
 	}
-	return store.SelectUser(ctx, id)
+	return store.FindUser(ctx, id)
 }
 
 func (store *Store) DeleteUser(ctx context.Context, id int) error {
@@ -149,7 +149,7 @@ func (store *Store) DeleteUser(ctx context.Context, id int) error {
 	return nil
 }
 
-func (store *Store) SelectSkills(ctx context.Context, userID int) ([]domain.Skill, error) {
+func (store *Store) ListSkills(ctx context.Context, userID int) ([]domain.Skill, error) {
 	var userExists bool
 	if err := store.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`, userID).Scan(&userExists); err != nil {
 		return nil, fmt.Errorf("vérification de l'utilisateur : %w", err)

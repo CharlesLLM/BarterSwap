@@ -4,6 +4,12 @@ import "errors"
 
 const WelcomeCredits = 10
 
+const (
+	SkillLevelBeginner     = "débutant"
+	SkillLevelIntermediate = "intermédiaire"
+	SkillLevelExpert       = "expert"
+)
+
 var (
 	ErrPseudoRequired      = errors.New("le pseudo est obligatoire")
 	ErrPseudoAlreadyExists = errors.New("ce pseudo existe déjà")
@@ -32,4 +38,13 @@ type CreateUserInput struct {
 	Pseudo string `json:"pseudo"`
 	Bio    string `json:"bio"`
 	Ville  string `json:"ville"`
+}
+
+func IsValidSkillLevel(level string) bool {
+	switch level {
+	case SkillLevelBeginner, SkillLevelIntermediate, SkillLevelExpert:
+		return true
+	default:
+		return false
+	}
 }

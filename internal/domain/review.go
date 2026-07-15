@@ -1,4 +1,4 @@
-package main
+package domain
 
 type Review struct {
 	ID          int    `json:"id"`

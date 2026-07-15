@@ -1,4 +1,4 @@
-package main
+package domain
 
 type UserStats struct {
 	UserID            int     `json:"user_id"`

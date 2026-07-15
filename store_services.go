@@ -45,8 +45,8 @@ func scanService(row serviceRow) (Service, error) {
 	return service, nil
 }
 
-func (s *Store) InsertService(ctx context.Context, providerID int, input CreateServiceInput) (Service, error) {
-	row := s.db.QueryRowContext(
+func (store *Store) InsertService(ctx context.Context, providerID int, input CreateServiceInput) (Service, error) {
+	row := store.db.QueryRowContext(
 		ctx,
 		`INSERT INTO services (
 			provider_id, titre, description, categorie,
@@ -71,7 +71,7 @@ func (s *Store) InsertService(ctx context.Context, providerID int, input CreateS
 	return service, nil
 }
 
-func (s *Store) SelectServices(ctx context.Context, filter ServiceFilter) ([]Service, error) {
+func (store *Store) SelectServices(ctx context.Context, filter ServiceFilter) ([]Service, error) {
 	query := `SELECT ` + serviceColumns + ` FROM services WHERE actif = TRUE`
 	args := []interface{}{}
 
@@ -92,7 +92,7 @@ func (s *Store) SelectServices(ctx context.Context, filter ServiceFilter) ([]Ser
 
 	query += " ORDER BY created_at DESC"
 
-	rows, err := s.db.QueryContext(ctx, query, args...)
+	rows, err := store.db.QueryContext(ctx, query, args...)
 
 	if err != nil {
 		return nil, fmt.Errorf("liste des services : %w", err)
@@ -119,8 +119,8 @@ func (s *Store) SelectServices(ctx context.Context, filter ServiceFilter) ([]Ser
 	return services, nil
 }
 
-func (s *Store) SelectService(ctx context.Context, id int) (Service, error) {
-	row := s.db.QueryRowContext(
+func (store *Store) SelectService(ctx context.Context, id int) (Service, error) {
+	row := store.db.QueryRowContext(
 		ctx,
 		`SELECT `+serviceColumns+` FROM services WHERE id = $1 AND actif = TRUE`,
 		id,
@@ -135,8 +135,8 @@ func (s *Store) SelectService(ctx context.Context, id int) (Service, error) {
 	return service, nil
 }
 
-func (s *Store) UpdateService(ctx context.Context, id int, input CreateServiceInput) (Service, error) {
-	row := s.db.QueryRowContext(
+func (store *Store) UpdateService(ctx context.Context, id int, input CreateServiceInput) (Service, error) {
+	row := store.db.QueryRowContext(
 		ctx,
 		`UPDATE services
 		 SET titre = $2, description = $3, categorie = $4,
@@ -161,8 +161,8 @@ func (s *Store) UpdateService(ctx context.Context, id int, input CreateServiceIn
 	return service, nil
 }
 
-func (s *Store) DeactivateService(ctx context.Context, id int) error {
-	result, err := s.db.ExecContext(
+func (store *Store) DeactivateService(ctx context.Context, id int) error {
+	result, err := store.db.ExecContext(
 		ctx,
 		`UPDATE services SET actif = FALSE WHERE id = $1 AND actif = TRUE`,
 		id,

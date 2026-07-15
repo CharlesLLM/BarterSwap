@@ -10,143 +10,143 @@ import (
 )
 
 func servicesHandler(store *Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
+	return func(responseWriter http.ResponseWriter, request *http.Request) {
+		switch request.Method {
 		case http.MethodGet:
-			listServices(w, r, store)
+			listServices(responseWriter, request, store)
 		case http.MethodPost:
-			createService(w, r, store)
+			createService(responseWriter, request, store)
 		default:
-			w.Header().Set("Allow", "GET, POST")
-			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "méthode non autorisée"})
+			responseWriter.Header().Set("Allow", "GET, POST")
+			writeJSON(responseWriter, http.StatusMethodNotAllowed, map[string]string{"error": "méthode non autorisée"})
 		}
 	}
 }
 
 func serviceHandler(store *Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		value := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/services/"), "/")
+	return func(responseWriter http.ResponseWriter, request *http.Request) {
+		value := strings.Trim(strings.TrimPrefix(request.URL.Path, "/api/services/"), "/")
 		id, err := strconv.Atoi(value)
 
 		if err != nil || id <= 0 {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "identifiant invalide"})
+			writeJSON(responseWriter, http.StatusBadRequest, map[string]string{"error": "identifiant invalide"})
 			return
 		}
 
-		switch r.Method {
+		switch request.Method {
 		case http.MethodGet:
-			getService(w, r, store, id)
+			getService(responseWriter, request, store, id)
 		case http.MethodPut:
-			updateService(w, r, store, id)
+			updateService(responseWriter, request, store, id)
 		case http.MethodDelete:
-			deleteService(w, r, store, id)
+			deleteService(responseWriter, request, store, id)
 		default:
-			w.Header().Set("Allow", "GET, PUT, DELETE")
-			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "méthode non autorisée"})
+			responseWriter.Header().Set("Allow", "GET, PUT, DELETE")
+			writeJSON(responseWriter, http.StatusMethodNotAllowed, map[string]string{"error": "méthode non autorisée"})
 		}
 	}
 }
 
-func listServices(w http.ResponseWriter, r *http.Request, store *Store) {
+func listServices(responseWriter http.ResponseWriter, request *http.Request, store *Store) {
 	filter := ServiceFilter{
-		Categorie: r.URL.Query().Get("categorie"),
-		Ville:     r.URL.Query().Get("ville"),
-		Search:    r.URL.Query().Get("search"),
+		Categorie: request.URL.Query().Get("categorie"),
+		Ville:     request.URL.Query().Get("ville"),
+		Search:    request.URL.Query().Get("search"),
 	}
 
-	services, err := ListServices(r.Context(), store, filter)
+	services, err := ListServices(request.Context(), store, filter)
 
 	if err != nil {
-		writeServiceError(w, err, "liste des services")
+		writeServiceError(responseWriter, err, "liste des services")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, services)
+	writeJSON(responseWriter, http.StatusOK, services)
 }
 
-func createService(w http.ResponseWriter, r *http.Request, store *Store) {
-	userID, ok := userIDFromHeader(r)
+func createService(responseWriter http.ResponseWriter, request *http.Request, store *Store) {
+	userID, userIDIsValid := userIDFromHeader(request)
 
-	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "header X-User-ID invalide"})
+	if !userIDIsValid {
+		writeJSON(responseWriter, http.StatusUnauthorized, map[string]string{"error": "header X-User-ID invalide"})
 		return
 	}
 
 	var input CreateServiceInput
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(request.Body)
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON invalide"})
+		writeJSON(responseWriter, http.StatusBadRequest, map[string]string{"error": "JSON invalide"})
 		return
 	}
 
-	service, err := CreateService(r.Context(), store, userID, input)
+	service, err := CreateService(request.Context(), store, userID, input)
 
 	if err != nil {
-		writeServiceError(w, err, "création du service")
+		writeServiceError(responseWriter, err, "création du service")
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, service)
+	writeJSON(responseWriter, http.StatusCreated, service)
 }
 
-func getService(w http.ResponseWriter, r *http.Request, store *Store, id int) {
-	service, err := GetService(r.Context(), store, id)
+func getService(responseWriter http.ResponseWriter, request *http.Request, store *Store, id int) {
+	service, err := GetService(request.Context(), store, id)
 
 	if err != nil {
-		writeServiceError(w, err, "lecture du service")
+		writeServiceError(responseWriter, err, "lecture du service")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, service)
+	writeJSON(responseWriter, http.StatusOK, service)
 }
 
-func updateService(w http.ResponseWriter, r *http.Request, store *Store, id int) {
-	userID, ok := userIDFromHeader(r)
+func updateService(responseWriter http.ResponseWriter, request *http.Request, store *Store, id int) {
+	userID, userIDIsValid := userIDFromHeader(request)
 
-	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "header X-User-ID invalide"})
+	if !userIDIsValid {
+		writeJSON(responseWriter, http.StatusUnauthorized, map[string]string{"error": "header X-User-ID invalide"})
 		return
 	}
 
 	var input CreateServiceInput
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(request.Body)
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON invalide"})
+		writeJSON(responseWriter, http.StatusBadRequest, map[string]string{"error": "JSON invalide"})
 		return
 	}
 
-	service, err := UpdateService(r.Context(), store, userID, id, input)
+	service, err := UpdateService(request.Context(), store, userID, id, input)
 
 	if err != nil {
-		writeServiceError(w, err, "modification du service")
+		writeServiceError(responseWriter, err, "modification du service")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, service)
+	writeJSON(responseWriter, http.StatusOK, service)
 }
 
-func deleteService(w http.ResponseWriter, r *http.Request, store *Store, id int) {
-	userID, ok := userIDFromHeader(r)
+func deleteService(responseWriter http.ResponseWriter, request *http.Request, store *Store, id int) {
+	userID, userIDIsValid := userIDFromHeader(request)
 
-	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "header X-User-ID invalide"})
+	if !userIDIsValid {
+		writeJSON(responseWriter, http.StatusUnauthorized, map[string]string{"error": "header X-User-ID invalide"})
 		return
 	}
 
-	if err := DeleteService(r.Context(), store, userID, id); err != nil {
-		writeServiceError(w, err, "suppression du service")
+	if err := DeleteService(request.Context(), store, userID, id); err != nil {
+		writeServiceError(responseWriter, err, "suppression du service")
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	responseWriter.WriteHeader(http.StatusNoContent)
 }
 
-func userIDFromHeader(r *http.Request) (int, bool) {
-	userID, err := strconv.Atoi(r.Header.Get("X-User-ID"))
+func userIDFromHeader(request *http.Request) (int, bool) {
+	userID, err := strconv.Atoi(request.Header.Get("X-User-ID"))
 
 	if err != nil || userID <= 0 {
 		return 0, false
@@ -155,20 +155,20 @@ func userIDFromHeader(r *http.Request) (int, bool) {
 	return userID, true
 }
 
-func writeServiceError(w http.ResponseWriter, err error, action string) {
+func writeServiceError(responseWriter http.ResponseWriter, err error, action string) {
 	switch {
 	case errors.Is(err, ErrServiceTitleRequired),
 		errors.Is(err, ErrServiceCategoryInvalid),
 		errors.Is(err, ErrServiceDurationInvalid),
 		errors.Is(err, ErrServiceCreditsInvalid),
 		errors.Is(err, ErrServiceSkillRequired):
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		writeJSON(responseWriter, http.StatusBadRequest, map[string]string{"error": err.Error()})
 	case errors.Is(err, ErrServiceForbidden):
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
+		writeJSON(responseWriter, http.StatusForbidden, map[string]string{"error": err.Error()})
 	case errors.Is(err, ErrServiceNotFound), errors.Is(err, ErrUserNotFound):
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		writeJSON(responseWriter, http.StatusNotFound, map[string]string{"error": err.Error()})
 	default:
 		log.Printf("%s : %v", action, err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erreur interne"})
+		writeJSON(responseWriter, http.StatusInternalServerError, map[string]string{"error": "erreur interne"})
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestValidateServiceInput(t *testing.T) {
+func TestValidateServiceInput(testContext *testing.T) {
 	validInput := CreateServiceInput{
 		Titre:        "Initiation au jardinage",
 		Categorie:    CategoryJardinage,
@@ -26,22 +26,22 @@ func TestValidateServiceInput(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testContext.Run(test.name, func(testCaseContext *testing.T) {
 			err := validateServiceInput(test.input)
 
 			if !errors.Is(err, test.want) {
-				t.Fatalf("validateServiceInput() error = %v, want %v", err, test.want)
+				testCaseContext.Fatalf("validateServiceInput() error = %v, want %v", err, test.want)
 			}
 		})
 	}
 }
 
-func TestValidServiceCategory(t *testing.T) {
+func TestValidServiceCategory(testContext *testing.T) {
 	if !validServiceCategory(CategoryInformatique) {
-		t.Fatal("la catégorie Informatique devrait être valide")
+		testContext.Fatal("la catégorie Informatique devrait être valide")
 	}
 
 	if validServiceCategory("Inconnue") {
-		t.Fatal("une catégorie inconnue ne devrait pas être valide")
+		testContext.Fatal("une catégorie inconnue ne devrait pas être valide")
 	}
 }

@@ -29,27 +29,27 @@ func NewStore(ctx context.Context, databaseURL string) (*Store, error) {
 	return &Store{db: db}, nil
 }
 
-func (s *Store) Close() {
-	if err := s.db.Close(); err != nil {
+func (store *Store) Close() {
+	if err := store.db.Close(); err != nil {
 		fmt.Printf("fermeture de la base de données : %v\n", err)
 	}
 }
 
-func (s *Store) CreateSchema(ctx context.Context) error {
+func (store *Store) CreateSchema(ctx context.Context) error {
 	schema, err := os.ReadFile("schema.sql")
 	if err != nil {
 		return fmt.Errorf("lecture du schéma SQL : %w", err)
 	}
 
-	if _, err := s.db.ExecContext(ctx, string(schema)); err != nil {
+	if _, err := store.db.ExecContext(ctx, string(schema)); err != nil {
 		return fmt.Errorf("création du schéma SQL : %w", err)
 	}
 
 	return nil
 }
 
-func (s *Store) InsertUser(ctx context.Context, input CreateUserInput) (User, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+func (store *Store) InsertUser(ctx context.Context, input CreateUserInput) (User, error) {
+	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
 		return User{}, fmt.Errorf("début de la transaction : %w", err)
 	}
@@ -100,8 +100,8 @@ func (s *Store) InsertUser(ctx context.Context, input CreateUserInput) (User, er
 	return user, nil
 }
 
-func (s *Store) SelectUsers(ctx context.Context) ([]User, error) {
-	rows, err := s.db.QueryContext(
+func (store *Store) SelectUsers(ctx context.Context) ([]User, error) {
+	rows, err := store.db.QueryContext(
 		ctx,
 		`SELECT u.id, u.pseudo, u.bio, u.ville,
 		        COALESCE(SUM(c.montant), 0), u.created_at
@@ -145,11 +145,11 @@ func (s *Store) SelectUsers(ctx context.Context) ([]User, error) {
 	return users, nil
 }
 
-func (s *Store) SelectUser(ctx context.Context, id int) (User, error) {
+func (store *Store) SelectUser(ctx context.Context, id int) (User, error) {
 	var user User
 	var createdAt time.Time
 
-	err := s.db.QueryRowContext(
+	err := store.db.QueryRowContext(
 		ctx,
 		`SELECT u.id, u.pseudo, u.bio, u.ville,
 		        COALESCE(SUM(c.montant), 0), u.created_at
@@ -176,7 +176,7 @@ func (s *Store) SelectUser(ctx context.Context, id int) (User, error) {
 	}
 
 	user.CreatedAt = createdAt.UTC().Format(time.RFC3339)
-	user.Skills, err = s.SelectSkills(ctx, id)
+	user.Skills, err = store.SelectSkills(ctx, id)
 
 	if err != nil {
 		return User{}, err
@@ -185,8 +185,8 @@ func (s *Store) SelectUser(ctx context.Context, id int) (User, error) {
 	return user, nil
 }
 
-func (s *Store) UpdateUser(ctx context.Context, id int, input CreateUserInput) (User, error) {
-	result, err := s.db.ExecContext(
+func (store *Store) UpdateUser(ctx context.Context, id int, input CreateUserInput) (User, error) {
+	result, err := store.db.ExecContext(
 		ctx,
 		`UPDATE users
 		 SET pseudo = $2, bio = $3, ville = $4
@@ -216,11 +216,11 @@ func (s *Store) UpdateUser(ctx context.Context, id int, input CreateUserInput) (
 		return User{}, ErrUserNotFound
 	}
 
-	return s.SelectUser(ctx, id)
+	return store.SelectUser(ctx, id)
 }
 
-func (s *Store) DeleteUser(ctx context.Context, id int) error {
-	result, err := s.db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id)
+func (store *Store) DeleteUser(ctx context.Context, id int) error {
+	result, err := store.db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("suppression de l'utilisateur : %w", err)
 	}
@@ -237,10 +237,10 @@ func (s *Store) DeleteUser(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *Store) SelectSkills(ctx context.Context, userID int) ([]Skill, error) {
+func (store *Store) SelectSkills(ctx context.Context, userID int) ([]Skill, error) {
 	var userExists bool
 
-	err := s.db.QueryRowContext(
+	err := store.db.QueryRowContext(
 		ctx,
 		`SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`,
 		userID,
@@ -254,7 +254,7 @@ func (s *Store) SelectSkills(ctx context.Context, userID int) ([]Skill, error) {
 		return nil, ErrUserNotFound
 	}
 
-	rows, err := s.db.QueryContext(
+	rows, err := store.db.QueryContext(
 		ctx,
 		`SELECT nom, niveau FROM skills WHERE user_id = $1 ORDER BY nom`,
 		userID,
@@ -285,8 +285,8 @@ func (s *Store) SelectSkills(ctx context.Context, userID int) ([]Skill, error) {
 	return skills, nil
 }
 
-func (s *Store) ReplaceSkills(ctx context.Context, userID int, skills []Skill) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+func (store *Store) ReplaceSkills(ctx context.Context, userID int, skills []Skill) error {
+	tx, err := store.db.BeginTx(ctx, nil)
 
 	if err != nil {
 		return fmt.Errorf("début de la transaction : %w", err)

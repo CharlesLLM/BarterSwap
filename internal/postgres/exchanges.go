@@ -42,7 +42,7 @@ func scanExchange(row exchangeRow) (domain.Exchange, error) {
 	return exchange, nil
 }
 
-func (store *Store) CreditBalance(ctx context.Context, userID int) (int, error) {
+func (store Store) CreditBalance(ctx context.Context, userID int) (int, error) {
 	var balance int
 	err := store.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(c.montant), 0)
 		FROM users u
@@ -58,7 +58,7 @@ func (store *Store) CreditBalance(ctx context.Context, userID int) (int, error) 
 	return balance, nil
 }
 
-func (store *Store) CreateExchange(ctx context.Context, requesterID int, offeredService domain.Service) (domain.Exchange, error) {
+func (store Store) CreateExchange(ctx context.Context, requesterID int, offeredService domain.Service) (domain.Exchange, error) {
 	row := store.db.QueryRowContext(ctx, `INSERT INTO exchanges (
 		service_id, requester_id, owner_id, credits, status
 	) VALUES ($1, $2, $3, $4, 'pending')
@@ -78,7 +78,7 @@ func (store *Store) CreateExchange(ctx context.Context, requesterID int, offered
 	return exchange, nil
 }
 
-func (store *Store) ListExchanges(ctx context.Context, userID int, filter domain.ExchangeFilter) ([]domain.Exchange, error) {
+func (store Store) ListExchanges(ctx context.Context, userID int, filter domain.ExchangeFilter) ([]domain.Exchange, error) {
 	query := `SELECT ` + exchangeColumns + ` FROM exchanges
 		WHERE (requester_id = $1 OR owner_id = $1)`
 	args := []any{userID}
@@ -108,7 +108,7 @@ func (store *Store) ListExchanges(ctx context.Context, userID int, filter domain
 	return exchanges, nil
 }
 
-func (store *Store) FindExchange(ctx context.Context, exchangeID int) (domain.Exchange, error) {
+func (store Store) FindExchange(ctx context.Context, exchangeID int) (domain.Exchange, error) {
 	row := store.db.QueryRowContext(ctx, `SELECT `+exchangeColumns+` FROM exchanges WHERE id = $1`, exchangeID)
 	exchange, err := scanExchange(row)
 	if err != nil {
@@ -117,7 +117,7 @@ func (store *Store) FindExchange(ctx context.Context, exchangeID int) (domain.Ex
 	return exchange, nil
 }
 
-func (store *Store) UpdateExchangeStatus(
+func (store Store) UpdateExchangeStatus(
 	ctx context.Context,
 	exchangeID int,
 	expectedStatus string,

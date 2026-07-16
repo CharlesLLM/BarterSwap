@@ -1,7 +1,5 @@
 package domain
 
-import "errors"
-
 const (
 	ExchangeStatusPending   = "pending"
 	ExchangeStatusAccepted  = "accepted"
@@ -11,14 +9,14 @@ const (
 )
 
 var (
-	ErrExchangeNotFound         = errors.New("échange introuvable")
-	ErrExchangeServiceRequired  = errors.New("l'identifiant du service est obligatoire")
-	ErrExchangeStatusInvalid    = errors.New("le statut de l'échange est invalide")
-	ErrExchangeTransition       = errors.New("cette transition d'échange est impossible")
-	ErrExchangeSelfService      = errors.New("un utilisateur ne peut pas demander son propre service")
-	ErrExchangeConflict         = errors.New("ce service a déjà un échange en cours")
-	ErrExchangeForbidden        = errors.New("vous ne pouvez pas effectuer cette action sur cet échange")
-	ErrExchangeInsufficientFund = errors.New("crédits insuffisants")
+	ErrExchangeNotFound         = Error{Kind: ErrorNotFound, Message: "échange introuvable"}
+	ErrExchangeServiceRequired  = Error{Kind: ErrorValidation, Message: "l'identifiant du service est obligatoire"}
+	ErrExchangeStatusInvalid    = Error{Kind: ErrorValidation, Message: "le statut de l'échange est invalide"}
+	ErrExchangeTransition       = Error{Kind: ErrorValidation, Message: "cette transition d'échange est impossible"}
+	ErrExchangeSelfService      = Error{Kind: ErrorValidation, Message: "un utilisateur ne peut pas demander son propre service"}
+	ErrExchangeConflict         = Error{Kind: ErrorConflict, Message: "ce service a déjà un échange en cours"}
+	ErrExchangeForbidden        = Error{Kind: ErrorForbidden, Message: "vous ne pouvez pas effectuer cette action sur cet échange"}
+	ErrExchangeInsufficientFund = Error{Kind: ErrorValidation, Message: "crédits insuffisants"}
 )
 
 type Exchange struct {

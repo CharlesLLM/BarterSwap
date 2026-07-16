@@ -40,7 +40,7 @@ func main() {
 	exchangeService := application.NewExchangeService(store)
 	handler := httpapi.NewHandler(userService, catalogService, exchangeService)
 
-	server := &http.Server{
+	server := http.Server{
 		Addr:              ":8080",
 		Handler:           handler.Routes(),
 		ReadHeaderTimeout: 5 * time.Second,

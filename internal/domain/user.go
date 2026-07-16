@@ -1,7 +1,5 @@
 package domain
 
-import "errors"
-
 const WelcomeCredits = 10
 
 const (
@@ -11,12 +9,12 @@ const (
 )
 
 var (
-	ErrPseudoRequired      = errors.New("le pseudo est obligatoire")
-	ErrPseudoAlreadyExists = errors.New("ce pseudo existe déjà")
-	ErrUserNotFound        = errors.New("utilisateur introuvable")
-	ErrSkillNameRequired   = errors.New("le nom de la compétence est obligatoire")
-	ErrSkillLevelInvalid   = errors.New("le niveau doit être débutant, intermédiaire ou expert")
-	ErrSkillDuplicate      = errors.New("une compétence ne peut pas être présente deux fois")
+	ErrPseudoRequired      = Error{Kind: ErrorValidation, Message: "le pseudo est obligatoire"}
+	ErrPseudoAlreadyExists = Error{Kind: ErrorConflict, Message: "ce pseudo existe déjà"}
+	ErrUserNotFound        = Error{Kind: ErrorNotFound, Message: "utilisateur introuvable"}
+	ErrSkillNameRequired   = Error{Kind: ErrorValidation, Message: "le nom de la compétence est obligatoire"}
+	ErrSkillLevelInvalid   = Error{Kind: ErrorValidation, Message: "le niveau doit être débutant, intermédiaire ou expert"}
+	ErrSkillDuplicate      = Error{Kind: ErrorValidation, Message: "une compétence ne peut pas être présente deux fois"}
 )
 
 type User struct {

@@ -7,16 +7,16 @@ import (
 )
 
 type Handler struct {
-	users     *application.UserService
-	catalog   *application.CatalogService
-	exchanges *application.ExchangeService
+	users     application.UserService
+	catalog   application.CatalogService
+	exchanges application.ExchangeService
 }
 
-func NewHandler(users *application.UserService, catalog *application.CatalogService, exchanges *application.ExchangeService) *Handler {
-	return &Handler{users: users, catalog: catalog, exchanges: exchanges}
+func NewHandler(users application.UserService, catalog application.CatalogService, exchanges application.ExchangeService) Handler {
+	return Handler{users: users, catalog: catalog, exchanges: exchanges}
 }
 
-func (handler *Handler) Routes() http.Handler {
+func (handler Handler) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/users", handler.usersHandler)
 	mux.HandleFunc("/api/users/", handler.userHandler)

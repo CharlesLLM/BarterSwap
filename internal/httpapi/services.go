@@ -6,7 +6,7 @@ import (
 	"github.com/CharlesLLM/BarterSwap/internal/domain"
 )
 
-func (handler *Handler) servicesHandler(responseWriter http.ResponseWriter, request *http.Request) {
+func (handler Handler) servicesHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	switch request.Method {
 	case http.MethodGet:
 		handler.listServices(responseWriter, request)
@@ -17,7 +17,7 @@ func (handler *Handler) servicesHandler(responseWriter http.ResponseWriter, requ
 	}
 }
 
-func (handler *Handler) serviceHandler(responseWriter http.ResponseWriter, request *http.Request) {
+func (handler Handler) serviceHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	parts := pathSegments(request.URL.Path, "/api/services/")
 	if len(parts) != 1 {
 		writeError(responseWriter, http.StatusNotFound, "route introuvable")
@@ -42,7 +42,7 @@ func (handler *Handler) serviceHandler(responseWriter http.ResponseWriter, reque
 	}
 }
 
-func (handler *Handler) listServices(responseWriter http.ResponseWriter, request *http.Request) {
+func (handler Handler) listServices(responseWriter http.ResponseWriter, request *http.Request) {
 	filter := domain.ServiceFilter{
 		Categorie: request.URL.Query().Get("categorie"),
 		Ville:     request.URL.Query().Get("ville"),
@@ -56,7 +56,7 @@ func (handler *Handler) listServices(responseWriter http.ResponseWriter, request
 	writeJSON(responseWriter, http.StatusOK, services)
 }
 
-func (handler *Handler) createService(responseWriter http.ResponseWriter, request *http.Request) {
+func (handler Handler) createService(responseWriter http.ResponseWriter, request *http.Request) {
 	userID, valid := requireUserID(responseWriter, request)
 	if !valid {
 		return
@@ -75,7 +75,7 @@ func (handler *Handler) createService(responseWriter http.ResponseWriter, reques
 	writeJSON(responseWriter, http.StatusCreated, service)
 }
 
-func (handler *Handler) getService(responseWriter http.ResponseWriter, request *http.Request, id int) {
+func (handler Handler) getService(responseWriter http.ResponseWriter, request *http.Request, id int) {
 	service, err := handler.catalog.Get(request.Context(), id)
 	if err != nil {
 		writeApplicationError(responseWriter, err, "lecture du service")
@@ -84,7 +84,7 @@ func (handler *Handler) getService(responseWriter http.ResponseWriter, request *
 	writeJSON(responseWriter, http.StatusOK, service)
 }
 
-func (handler *Handler) updateService(responseWriter http.ResponseWriter, request *http.Request, id int) {
+func (handler Handler) updateService(responseWriter http.ResponseWriter, request *http.Request, id int) {
 	userID, valid := requireUserID(responseWriter, request)
 	if !valid {
 		return
@@ -103,7 +103,7 @@ func (handler *Handler) updateService(responseWriter http.ResponseWriter, reques
 	writeJSON(responseWriter, http.StatusOK, service)
 }
 
-func (handler *Handler) deleteService(responseWriter http.ResponseWriter, request *http.Request, id int) {
+func (handler Handler) deleteService(responseWriter http.ResponseWriter, request *http.Request, id int) {
 	userID, valid := requireUserID(responseWriter, request)
 	if !valid {
 		return

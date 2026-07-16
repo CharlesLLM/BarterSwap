@@ -3,101 +3,86 @@ package application
 import (
 	"context"
 	"errors"
+	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/CharlesLLM/BarterSwap/internal/domain"
 )
 
-type fakeExchangeRepository struct {
-	offeredService domain.Service
-	user           domain.User
-	balance        int
-	exchange       domain.Exchange
-	createErr      error
-	updateErr      error
-	updatedFrom    string
-	updatedTo      string
-	creditChanges  []domain.CreditChange
+type exchangeRepositoryStub struct {
+	service     domain.Service
+	balance     int
+	exchange    domain.Exchange
+	wantFrom    string
+	wantTo      string
+	wantChanges []domain.CreditChange
 }
 
-func (repository *fakeExchangeRepository) FindService(context.Context, int) (domain.Service, error) {
-	return repository.offeredService, nil
+func (repository exchangeRepositoryStub) FindService(context.Context, int) (domain.Service, error) {
+	return repository.service, nil
 }
 
-func (repository *fakeExchangeRepository) FindUser(context.Context, int) (domain.User, error) {
-	return repository.user, nil
+func (repository exchangeRepositoryStub) FindUser(context.Context, int) (domain.User, error) {
+	return domain.User{ID: 1}, nil
 }
 
-func (repository *fakeExchangeRepository) CreditBalance(context.Context, int) (int, error) {
+func (repository exchangeRepositoryStub) CreditBalance(context.Context, int) (int, error) {
 	return repository.balance, nil
 }
 
-func (repository *fakeExchangeRepository) CreateExchange(context.Context, int, domain.Service) (domain.Exchange, error) {
-	return repository.exchange, repository.createErr
-}
-
-func (repository *fakeExchangeRepository) ListExchanges(context.Context, int, domain.ExchangeFilter) ([]domain.Exchange, error) {
-	return []domain.Exchange{repository.exchange}, nil
-}
-
-func (repository *fakeExchangeRepository) FindExchange(context.Context, int) (domain.Exchange, error) {
+func (repository exchangeRepositoryStub) CreateExchange(context.Context, int, domain.Service) (domain.Exchange, error) {
 	return repository.exchange, nil
 }
 
-func (repository *fakeExchangeRepository) UpdateExchangeStatus(
-	_ context.Context,
-	_ int,
-	expectedStatus string,
-	newStatus string,
-	creditChanges []domain.CreditChange,
-) (domain.Exchange, error) {
-	repository.updatedFrom = expectedStatus
-	repository.updatedTo = newStatus
-	repository.creditChanges = creditChanges
-	updated := repository.exchange
-	updated.Status = newStatus
-	return updated, repository.updateErr
+func (repository exchangeRepositoryStub) ListExchanges(context.Context, int, domain.ExchangeFilter) ([]domain.Exchange, error) {
+	return []domain.Exchange{repository.exchange}, nil
 }
 
-func TestExchangeServiceCreate(testContext *testing.T) {
+func (repository exchangeRepositoryStub) FindExchange(context.Context, int) (domain.Exchange, error) {
+	return repository.exchange, nil
+}
+
+func (repository exchangeRepositoryStub) UpdateExchangeStatus(
+	_ context.Context,
+	_ int,
+	from string,
+	to string,
+	changes []domain.CreditChange,
+) (domain.Exchange, error) {
+	if from != repository.wantFrom || to != repository.wantTo {
+		return domain.Exchange{}, fmt.Errorf("transition reçue %s -> %s", from, to)
+	}
+	if !reflect.DeepEqual(changes, repository.wantChanges) {
+		return domain.Exchange{}, fmt.Errorf("mouvements de crédit reçus : %+v", changes)
+	}
+	exchange := repository.exchange
+	exchange.Status = to
+	return exchange, nil
+}
+
+func TestExchangeCreate(testContext *testing.T) {
 	tests := []struct {
 		name        string
 		requesterID int
-		service     domain.Service
+		providerID  int
 		balance     int
 		wantErr     error
 	}{
-		{
-			name:        "demande valide",
-			requesterID: 1,
-			service:     domain.Service{ID: 5, ProviderID: 2, Credits: 4},
-			balance:     10,
-		},
-		{
-			name:        "propre service",
-			requesterID: 2,
-			service:     domain.Service{ID: 5, ProviderID: 2, Credits: 4},
-			balance:     10,
-			wantErr:     domain.ErrExchangeSelfService,
-		},
-		{
-			name:        "crédits insuffisants",
-			requesterID: 1,
-			service:     domain.Service{ID: 5, ProviderID: 2, Credits: 4},
-			balance:     3,
-			wantErr:     domain.ErrExchangeInsufficientFund,
-		},
+		{name: "demande valide", requesterID: 1, providerID: 2, balance: 10},
+		{name: "propre service", requesterID: 2, providerID: 2, balance: 10, wantErr: domain.ErrExchangeSelfService},
+		{name: "crédits insuffisants", requesterID: 1, providerID: 2, balance: 3, wantErr: domain.ErrExchangeInsufficientFund},
 	}
 
 	for _, test := range tests {
 		testContext.Run(test.name, func(testCaseContext *testing.T) {
-			repository := &fakeExchangeRepository{
-				offeredService: test.service,
-				balance:        test.balance,
-				exchange:       domain.Exchange{ID: 8, Status: domain.ExchangeStatusPending},
+			repository := exchangeRepositoryStub{
+				service:  domain.Service{ID: 5, ProviderID: test.providerID, Credits: 4},
+				balance:  test.balance,
+				exchange: domain.Exchange{ID: 8, Status: domain.ExchangeStatusPending},
 			}
 			service := NewExchangeService(repository)
-			_, err := service.Create(context.Background(), test.requesterID, domain.CreateExchangeInput{ServiceID: test.service.ID})
+			_, err := service.Create(context.Background(), test.requesterID, domain.CreateExchangeInput{ServiceID: 5})
 			if !errors.Is(err, test.wantErr) {
 				testCaseContext.Fatalf("Create() error = %v, want %v", err, test.wantErr)
 			}
@@ -105,75 +90,43 @@ func TestExchangeServiceCreate(testContext *testing.T) {
 	}
 }
 
-func TestExchangeServiceTransitions(testContext *testing.T) {
+func TestExchangeTransitions(testContext *testing.T) {
 	tests := []struct {
-		name       string
-		action     string
-		status     string
-		userID     int
-		wantStatus string
-		wantErr    error
-		wantChange *domain.CreditChange
+		name        string
+		action      string
+		status      string
+		userID      int
+		wantStatus  string
+		wantErr     error
+		wantChanges []domain.CreditChange
 	}{
 		{
-			name:       "acceptation par le propriétaire",
-			action:     "accept",
-			status:     domain.ExchangeStatusPending,
-			userID:     2,
-			wantStatus: domain.ExchangeStatusAccepted,
-			wantChange: &domain.CreditChange{UserID: 1, Montant: -4, Type: domain.CreditTypeSpend},
+			name: "acceptation", action: "accept", status: domain.ExchangeStatusPending, userID: 2,
+			wantStatus:  domain.ExchangeStatusAccepted,
+			wantChanges: []domain.CreditChange{{UserID: 1, Montant: -4, Type: domain.CreditTypeSpend}},
+		},
+		{name: "refus", action: "reject", status: domain.ExchangeStatusPending, userID: 2, wantStatus: domain.ExchangeStatusRejected},
+		{
+			name: "complétion", action: "complete", status: domain.ExchangeStatusAccepted, userID: 1,
+			wantStatus:  domain.ExchangeStatusCompleted,
+			wantChanges: []domain.CreditChange{{UserID: 2, Montant: 4, Type: domain.CreditTypeEarn}},
 		},
 		{
-			name:       "refus par le propriétaire",
-			action:     "reject",
-			status:     domain.ExchangeStatusPending,
-			userID:     2,
-			wantStatus: domain.ExchangeStatusRejected,
+			name: "annulation avec remboursement", action: "cancel", status: domain.ExchangeStatusAccepted, userID: 2,
+			wantStatus:  domain.ExchangeStatusCancelled,
+			wantChanges: []domain.CreditChange{{UserID: 1, Montant: 4, Type: domain.CreditTypeRefund}},
 		},
-		{
-			name:       "complétion par un participant",
-			action:     "complete",
-			status:     domain.ExchangeStatusAccepted,
-			userID:     1,
-			wantStatus: domain.ExchangeStatusCompleted,
-			wantChange: &domain.CreditChange{UserID: 2, Montant: 4, Type: domain.CreditTypeEarn},
-		},
-		{
-			name:       "annulation acceptée et remboursement",
-			action:     "cancel",
-			status:     domain.ExchangeStatusAccepted,
-			userID:     2,
-			wantStatus: domain.ExchangeStatusCancelled,
-			wantChange: &domain.CreditChange{UserID: 1, Montant: 4, Type: domain.CreditTypeRefund},
-		},
-		{
-			name:       "annulation en attente sans mouvement de crédit",
-			action:     "cancel",
-			status:     domain.ExchangeStatusPending,
-			userID:     1,
-			wantStatus: domain.ExchangeStatusCancelled,
-		},
-		{
-			name:    "acceptation par le demandeur interdite",
-			action:  "accept",
-			status:  domain.ExchangeStatusPending,
-			userID:  1,
-			wantErr: domain.ErrExchangeForbidden,
-		},
-		{
-			name:    "complétion avant acceptation impossible",
-			action:  "complete",
-			status:  domain.ExchangeStatusPending,
-			userID:  1,
-			wantErr: domain.ErrExchangeTransition,
-		},
+		{name: "annulation en attente", action: "cancel", status: domain.ExchangeStatusPending, userID: 1, wantStatus: domain.ExchangeStatusCancelled},
+		{name: "acceptation interdite", action: "accept", status: domain.ExchangeStatusPending, userID: 1, wantErr: domain.ErrExchangeForbidden},
+		{name: "complétion impossible", action: "complete", status: domain.ExchangeStatusPending, userID: 1, wantErr: domain.ErrExchangeTransition},
 	}
 
 	for _, test := range tests {
 		testContext.Run(test.name, func(testCaseContext *testing.T) {
-			repository := &fakeExchangeRepository{exchange: domain.Exchange{
-				ID: 8, ServiceID: 5, RequesterID: 1, OwnerID: 2, Status: test.status, Credits: 4,
-			}}
+			repository := exchangeRepositoryStub{
+				exchange: domain.Exchange{ID: 8, RequesterID: 1, OwnerID: 2, Status: test.status, Credits: 4},
+				wantFrom: test.status, wantTo: test.wantStatus, wantChanges: test.wantChanges,
+			}
 			service := NewExchangeService(repository)
 
 			var err error
@@ -191,27 +144,12 @@ func TestExchangeServiceTransitions(testContext *testing.T) {
 			if !errors.Is(err, test.wantErr) {
 				testCaseContext.Fatalf("%s() error = %v, want %v", test.action, err, test.wantErr)
 			}
-			if test.wantErr != nil {
-				return
-			}
-			if repository.updatedFrom != test.status || repository.updatedTo != test.wantStatus {
-				testCaseContext.Fatalf("transition = %s -> %s, want %s -> %s", repository.updatedFrom, repository.updatedTo, test.status, test.wantStatus)
-			}
-			if test.wantChange == nil {
-				if len(repository.creditChanges) != 0 {
-					testCaseContext.Fatalf("creditChanges = %+v, want aucun mouvement", repository.creditChanges)
-				}
-				return
-			}
-			if len(repository.creditChanges) != 1 || repository.creditChanges[0] != *test.wantChange {
-				testCaseContext.Fatalf("creditChanges = %+v, want %+v", repository.creditChanges, *test.wantChange)
-			}
 		})
 	}
 }
 
-func TestExchangeServiceListRejectsInvalidStatus(testContext *testing.T) {
-	service := NewExchangeService(&fakeExchangeRepository{})
+func TestExchangeListRejectsInvalidStatus(testContext *testing.T) {
+	service := NewExchangeService(exchangeRepositoryStub{})
 	_, err := service.List(context.Background(), 1, domain.ExchangeFilter{Status: "inconnu"})
 	if !errors.Is(err, domain.ErrExchangeStatusInvalid) {
 		testContext.Fatalf("List() error = %v, want %v", err, domain.ErrExchangeStatusInvalid)

@@ -21,11 +21,11 @@ type ExchangeService struct {
 	repository ExchangeRepository
 }
 
-func NewExchangeService(repository ExchangeRepository) *ExchangeService {
-	return &ExchangeService{repository: repository}
+func NewExchangeService(repository ExchangeRepository) ExchangeService {
+	return ExchangeService{repository: repository}
 }
 
-func (service *ExchangeService) Create(ctx context.Context, requesterID int, input domain.CreateExchangeInput) (domain.Exchange, error) {
+func (service ExchangeService) Create(ctx context.Context, requesterID int, input domain.CreateExchangeInput) (domain.Exchange, error) {
 	if input.ServiceID <= 0 {
 		return domain.Exchange{}, domain.ErrExchangeServiceRequired
 	}
@@ -49,7 +49,7 @@ func (service *ExchangeService) Create(ctx context.Context, requesterID int, inp
 	return service.repository.CreateExchange(ctx, requesterID, offeredService)
 }
 
-func (service *ExchangeService) List(ctx context.Context, userID int, filter domain.ExchangeFilter) ([]domain.Exchange, error) {
+func (service ExchangeService) List(ctx context.Context, userID int, filter domain.ExchangeFilter) ([]domain.Exchange, error) {
 	filter.Status = strings.ToLower(strings.TrimSpace(filter.Status))
 	if filter.Status != "" && !domain.IsValidExchangeStatus(filter.Status) {
 		return nil, domain.ErrExchangeStatusInvalid
@@ -60,7 +60,7 @@ func (service *ExchangeService) List(ctx context.Context, userID int, filter dom
 	return service.repository.ListExchanges(ctx, userID, filter)
 }
 
-func (service *ExchangeService) Get(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
+func (service ExchangeService) Get(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
 	exchange, err := service.repository.FindExchange(ctx, exchangeID)
 	if err != nil {
 		return domain.Exchange{}, err
@@ -71,7 +71,7 @@ func (service *ExchangeService) Get(ctx context.Context, userID, exchangeID int)
 	return exchange, nil
 }
 
-func (service *ExchangeService) Accept(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
+func (service ExchangeService) Accept(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
 	exchange, err := service.pendingExchangeForOwner(ctx, userID, exchangeID)
 	if err != nil {
 		return domain.Exchange{}, err
@@ -82,7 +82,7 @@ func (service *ExchangeService) Accept(ctx context.Context, userID, exchangeID i
 	})
 }
 
-func (service *ExchangeService) Reject(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
+func (service ExchangeService) Reject(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
 	exchange, err := service.pendingExchangeForOwner(ctx, userID, exchangeID)
 	if err != nil {
 		return domain.Exchange{}, err
@@ -90,7 +90,7 @@ func (service *ExchangeService) Reject(ctx context.Context, userID, exchangeID i
 	return service.repository.UpdateExchangeStatus(ctx, exchange.ID, domain.ExchangeStatusPending, domain.ExchangeStatusRejected, nil)
 }
 
-func (service *ExchangeService) Complete(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
+func (service ExchangeService) Complete(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
 	exchange, err := service.repository.FindExchange(ctx, exchangeID)
 	if err != nil {
 		return domain.Exchange{}, err
@@ -107,7 +107,7 @@ func (service *ExchangeService) Complete(ctx context.Context, userID, exchangeID
 	})
 }
 
-func (service *ExchangeService) Cancel(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
+func (service ExchangeService) Cancel(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
 	exchange, err := service.repository.FindExchange(ctx, exchangeID)
 	if err != nil {
 		return domain.Exchange{}, err
@@ -130,7 +130,7 @@ func (service *ExchangeService) Cancel(ctx context.Context, userID, exchangeID i
 	return service.repository.UpdateExchangeStatus(ctx, exchange.ID, exchange.Status, domain.ExchangeStatusCancelled, creditChanges)
 }
 
-func (service *ExchangeService) pendingExchangeForOwner(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
+func (service ExchangeService) pendingExchangeForOwner(ctx context.Context, userID, exchangeID int) (domain.Exchange, error) {
 	exchange, err := service.repository.FindExchange(ctx, exchangeID)
 	if err != nil {
 		return domain.Exchange{}, err

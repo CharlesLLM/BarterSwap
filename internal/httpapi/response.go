@@ -10,6 +10,13 @@ import (
 	"github.com/CharlesLLM/BarterSwap/internal/domain"
 )
 
+var statusByErrorKind = map[domain.ErrorKind]int{
+	domain.ErrorValidation: http.StatusBadRequest,
+	domain.ErrorConflict:   http.StatusConflict,
+	domain.ErrorForbidden:  http.StatusForbidden,
+	domain.ErrorNotFound:   http.StatusNotFound,
+}
+
 func writeJSON(responseWriter http.ResponseWriter, status int, value any) {
 	responseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
 	responseWriter.WriteHeader(status)
@@ -38,31 +45,14 @@ func writeApplicationError(responseWriter http.ResponseWriter, err error, action
 }
 
 func statusForError(err error) int {
-	switch {
-	case errors.Is(err, domain.ErrPseudoRequired),
-		errors.Is(err, domain.ErrSkillNameRequired),
-		errors.Is(err, domain.ErrSkillLevelInvalid),
-		errors.Is(err, domain.ErrSkillDuplicate),
-		errors.Is(err, domain.ErrServiceTitleRequired),
-		errors.Is(err, domain.ErrServiceCategoryInvalid),
-		errors.Is(err, domain.ErrServiceDurationInvalid),
-		errors.Is(err, domain.ErrServiceCreditsInvalid),
-		errors.Is(err, domain.ErrServiceSkillRequired),
-		errors.Is(err, domain.ErrExchangeServiceRequired),
-		errors.Is(err, domain.ErrExchangeStatusInvalid),
-		errors.Is(err, domain.ErrExchangeTransition),
-		errors.Is(err, domain.ErrExchangeSelfService),
-		errors.Is(err, domain.ErrExchangeInsufficientFund):
-		return http.StatusBadRequest
-	case errors.Is(err, domain.ErrPseudoAlreadyExists), errors.Is(err, domain.ErrExchangeConflict):
-		return http.StatusConflict
-	case errors.Is(err, domain.ErrServiceForbidden), errors.Is(err, domain.ErrExchangeForbidden):
-		return http.StatusForbidden
-	case errors.Is(err, domain.ErrUserNotFound),
-		errors.Is(err, domain.ErrServiceNotFound),
-		errors.Is(err, domain.ErrExchangeNotFound):
-		return http.StatusNotFound
-	default:
+	var domainError domain.Error
+	if !errors.As(err, &domainError) {
 		return http.StatusInternalServerError
 	}
+
+	status, found := statusByErrorKind[domainError.Kind]
+	if !found {
+		return http.StatusInternalServerError
+	}
+	return status
 }

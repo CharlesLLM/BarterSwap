@@ -15,31 +15,31 @@ type fakeHTTPExchangeRepository struct {
 	exchange domain.Exchange
 }
 
-func (repository *fakeHTTPExchangeRepository) FindService(context.Context, int) (domain.Service, error) {
+func (repository fakeHTTPExchangeRepository) FindService(context.Context, int) (domain.Service, error) {
 	return domain.Service{ID: 5, ProviderID: 2, Credits: 3}, nil
 }
 
-func (repository *fakeHTTPExchangeRepository) FindUser(context.Context, int) (domain.User, error) {
+func (repository fakeHTTPExchangeRepository) FindUser(context.Context, int) (domain.User, error) {
 	return domain.User{ID: 1}, nil
 }
 
-func (repository *fakeHTTPExchangeRepository) CreditBalance(context.Context, int) (int, error) {
+func (repository fakeHTTPExchangeRepository) CreditBalance(context.Context, int) (int, error) {
 	return 10, nil
 }
 
-func (repository *fakeHTTPExchangeRepository) CreateExchange(context.Context, int, domain.Service) (domain.Exchange, error) {
+func (repository fakeHTTPExchangeRepository) CreateExchange(context.Context, int, domain.Service) (domain.Exchange, error) {
 	return repository.exchange, nil
 }
 
-func (repository *fakeHTTPExchangeRepository) ListExchanges(context.Context, int, domain.ExchangeFilter) ([]domain.Exchange, error) {
+func (repository fakeHTTPExchangeRepository) ListExchanges(context.Context, int, domain.ExchangeFilter) ([]domain.Exchange, error) {
 	return []domain.Exchange{repository.exchange}, nil
 }
 
-func (repository *fakeHTTPExchangeRepository) FindExchange(context.Context, int) (domain.Exchange, error) {
+func (repository fakeHTTPExchangeRepository) FindExchange(context.Context, int) (domain.Exchange, error) {
 	return repository.exchange, nil
 }
 
-func (repository *fakeHTTPExchangeRepository) UpdateExchangeStatus(
+func (repository fakeHTTPExchangeRepository) UpdateExchangeStatus(
 	_ context.Context,
 	_ int,
 	_ string,
@@ -52,11 +52,11 @@ func (repository *fakeHTTPExchangeRepository) UpdateExchangeStatus(
 }
 
 func TestExchangeRoutes(testContext *testing.T) {
-	repository := &fakeHTTPExchangeRepository{exchange: domain.Exchange{
+	repository := fakeHTTPExchangeRepository{exchange: domain.Exchange{
 		ID: 8, ServiceID: 5, RequesterID: 1, OwnerID: 2, Status: domain.ExchangeStatusPending, Credits: 3,
 	}}
 	exchangeService := application.NewExchangeService(repository)
-	handler := NewHandler(nil, nil, exchangeService).Routes()
+	handler := NewHandler(application.UserService{}, application.CatalogService{}, exchangeService).Routes()
 
 	tests := []struct {
 		name       string

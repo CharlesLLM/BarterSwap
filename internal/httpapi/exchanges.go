@@ -6,7 +6,7 @@ import (
 	"github.com/CharlesLLM/BarterSwap/internal/domain"
 )
 
-func (handler *Handler) exchangesHandler(responseWriter http.ResponseWriter, request *http.Request) {
+func (handler Handler) exchangesHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	switch request.Method {
 	case http.MethodGet:
 		handler.listExchanges(responseWriter, request)
@@ -17,7 +17,7 @@ func (handler *Handler) exchangesHandler(responseWriter http.ResponseWriter, req
 	}
 }
 
-func (handler *Handler) exchangeHandler(responseWriter http.ResponseWriter, request *http.Request) {
+func (handler Handler) exchangeHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	parts := pathSegments(request.URL.Path, "/api/exchanges/")
 	if len(parts) == 0 || len(parts) > 2 {
 		writeError(responseWriter, http.StatusNotFound, "route introuvable")
@@ -45,7 +45,7 @@ func (handler *Handler) exchangeHandler(responseWriter http.ResponseWriter, requ
 	handler.updateExchangeStatus(responseWriter, request, exchangeID, parts[1])
 }
 
-func (handler *Handler) createExchange(responseWriter http.ResponseWriter, request *http.Request) {
+func (handler Handler) createExchange(responseWriter http.ResponseWriter, request *http.Request) {
 	userID, valid := requireUserID(responseWriter, request)
 	if !valid {
 		return
@@ -63,7 +63,7 @@ func (handler *Handler) createExchange(responseWriter http.ResponseWriter, reque
 	writeJSON(responseWriter, http.StatusCreated, exchange)
 }
 
-func (handler *Handler) listExchanges(responseWriter http.ResponseWriter, request *http.Request) {
+func (handler Handler) listExchanges(responseWriter http.ResponseWriter, request *http.Request) {
 	userID, valid := requireUserID(responseWriter, request)
 	if !valid {
 		return
@@ -77,7 +77,7 @@ func (handler *Handler) listExchanges(responseWriter http.ResponseWriter, reques
 	writeJSON(responseWriter, http.StatusOK, exchanges)
 }
 
-func (handler *Handler) getExchange(responseWriter http.ResponseWriter, request *http.Request, exchangeID int) {
+func (handler Handler) getExchange(responseWriter http.ResponseWriter, request *http.Request, exchangeID int) {
 	userID, valid := requireUserID(responseWriter, request)
 	if !valid {
 		return
@@ -90,7 +90,7 @@ func (handler *Handler) getExchange(responseWriter http.ResponseWriter, request 
 	writeJSON(responseWriter, http.StatusOK, exchange)
 }
 
-func (handler *Handler) updateExchangeStatus(responseWriter http.ResponseWriter, request *http.Request, exchangeID int, action string) {
+func (handler Handler) updateExchangeStatus(responseWriter http.ResponseWriter, request *http.Request, exchangeID int, action string) {
 	userID, valid := requireUserID(responseWriter, request)
 	if !valid {
 		return

@@ -463,6 +463,23 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /api/users/{id}/stats:
+    get:
+      tags: [Utilisateurs]
+      summary: Voir les statistiques d'un utilisateur (crédits, échanges, avis)
+      security:
+        - UserID: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
   securitySchemes:
     UserID:

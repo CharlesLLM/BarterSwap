@@ -11,6 +11,7 @@ type UserRepository interface {
 	CreateUser(context.Context, domain.CreateUserInput) (domain.User, error)
 	ListUsers(context.Context) ([]domain.User, error)
 	FindUser(context.Context, int) (domain.User, error)
+	GetUserStats(context.Context, int) (domain.UserStats, error)
 	UpdateUser(context.Context, int, domain.CreateUserInput) (domain.User, error)
 	DeleteUser(context.Context, int) error
 	ListSkills(context.Context, int) ([]domain.Skill, error)
@@ -40,6 +41,10 @@ func (service UserService) List(ctx context.Context) ([]domain.User, error) {
 
 func (service UserService) Get(ctx context.Context, id int) (domain.User, error) {
 	return service.repository.FindUser(ctx, id)
+}
+
+func (service UserService) Stats(ctx context.Context, id int) (domain.UserStats, error) {
+	return service.repository.GetUserStats(ctx, id)
 }
 
 func (service UserService) Update(ctx context.Context, id int, input domain.CreateUserInput) (domain.User, error) {

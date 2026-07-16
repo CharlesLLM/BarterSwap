@@ -64,6 +64,16 @@ func (handler Handler) userHandler(responseWriter http.ResponseWriter, request *
 		return
 	}
 
+	if len(parts) == 2 && parts[1] == "stats" {
+		switch request.Method {
+		case http.MethodGet:
+			handler.getUserStats(responseWriter, request, id)
+		default:
+			methodNotAllowed(responseWriter, http.MethodGet)
+		}
+		return
+	}
+
 	writeError(responseWriter, http.StatusNotFound, "route introuvable")
 }
 
@@ -142,4 +152,13 @@ func (handler Handler) replaceUserSkills(responseWriter http.ResponseWriter, req
 		return
 	}
 	writeJSON(responseWriter, http.StatusOK, skills)
+}
+
+func (handler Handler) getUserStats(responseWriter http.ResponseWriter, request *http.Request, id int) {
+	stats, err := handler.users.Stats(request.Context(), id)
+	if err != nil {
+		writeApplicationError(responseWriter, err, "lecture des statistiques utilisateur")
+		return
+	}
+	writeJSON(responseWriter, http.StatusOK, stats)
 }

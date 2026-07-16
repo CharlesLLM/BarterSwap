@@ -10,10 +10,16 @@ type Handler struct {
 	users     application.UserService
 	catalog   application.CatalogService
 	exchanges application.ExchangeService
+	reviews   application.ReviewService
 }
 
-func NewHandler(users application.UserService, catalog application.CatalogService, exchanges application.ExchangeService) Handler {
-	return Handler{users: users, catalog: catalog, exchanges: exchanges}
+func NewHandler(
+	users application.UserService,
+	catalog application.CatalogService,
+	exchanges application.ExchangeService,
+	reviews application.ReviewService,
+) Handler {
+	return Handler{users: users, catalog: catalog, exchanges: exchanges, reviews: reviews}
 }
 
 func (handler Handler) Routes() http.Handler {

@@ -2,7 +2,7 @@ package httpapi
 
 import (
 	_ "embed"
-	"log"
+	"fmt"
 	"net/http"
 )
 
@@ -38,7 +38,7 @@ func openAPIHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 	responseWriter.Header().Set("Content-Type", "application/yaml; charset=utf-8")
 	if _, err := responseWriter.Write(openAPISpec); err != nil {
-		log.Printf("écriture du schéma OpenAPI : %v", err)
+		fmt.Printf("écriture du schéma OpenAPI : %v\n", err)
 	}
 }
 
@@ -61,6 +61,6 @@ func swaggerHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 	responseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if _, err := responseWriter.Write([]byte(swaggerPage)); err != nil {
-		log.Printf("écriture de Swagger UI : %v", err)
+		fmt.Printf("écriture de Swagger UI : %v\n", err)
 	}
 }

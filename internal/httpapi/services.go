@@ -19,7 +19,7 @@ func (handler Handler) servicesHandler(responseWriter http.ResponseWriter, reque
 
 func (handler Handler) serviceHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	parts := pathSegments(request.URL.Path, "/api/services/")
-	if len(parts) != 1 {
+	if len(parts) == 0 || len(parts) > 2 {
 		writeError(responseWriter, http.StatusNotFound, "route introuvable")
 		return
 	}
@@ -30,16 +30,29 @@ func (handler Handler) serviceHandler(responseWriter http.ResponseWriter, reques
 		return
 	}
 
-	switch request.Method {
-	case http.MethodGet:
-		handler.getService(responseWriter, request, id)
-	case http.MethodPut:
-		handler.updateService(responseWriter, request, id)
-	case http.MethodDelete:
-		handler.deleteService(responseWriter, request, id)
-	default:
-		methodNotAllowed(responseWriter, http.MethodGet, http.MethodPut, http.MethodDelete)
+	if len(parts) == 1 {
+		switch request.Method {
+		case http.MethodGet:
+			handler.getService(responseWriter, request, id)
+		case http.MethodPut:
+			handler.updateService(responseWriter, request, id)
+		case http.MethodDelete:
+			handler.deleteService(responseWriter, request, id)
+		default:
+			methodNotAllowed(responseWriter, http.MethodGet, http.MethodPut, http.MethodDelete)
+		}
+		return
 	}
+
+	if parts[1] == "reviews" && request.Method == http.MethodGet {
+		handler.listServiceReviews(responseWriter, request, id)
+		return
+	}
+	if parts[1] == "reviews" {
+		methodNotAllowed(responseWriter, http.MethodGet)
+		return
+	}
+	writeError(responseWriter, http.StatusNotFound, "route introuvable")
 }
 
 func (handler Handler) listServices(responseWriter http.ResponseWriter, request *http.Request) {

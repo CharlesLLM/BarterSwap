@@ -55,6 +55,14 @@ func (handler Handler) userHandler(responseWriter http.ResponseWriter, request *
 		}
 		return
 	}
+	if len(parts) == 2 && parts[1] == "reviews" {
+		if request.Method != http.MethodGet {
+			methodNotAllowed(responseWriter, http.MethodGet)
+			return
+		}
+		handler.listUserReviews(responseWriter, request, id)
+		return
+	}
 
 	writeError(responseWriter, http.StatusNotFound, "route introuvable")
 }

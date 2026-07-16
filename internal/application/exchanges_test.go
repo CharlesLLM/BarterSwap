@@ -155,3 +155,21 @@ func TestExchangeListRejectsInvalidStatus(testContext *testing.T) {
 		testContext.Fatalf("List() error = %v, want %v", err, domain.ErrExchangeStatusInvalid)
 	}
 }
+
+func TestExchangeListAndGet(testContext *testing.T) {
+	repository := exchangeRepositoryStub{exchange: domain.Exchange{
+		ID: 8, RequesterID: 1, OwnerID: 2, Status: domain.ExchangeStatusPending,
+	}}
+	service := NewExchangeService(repository)
+
+	exchanges, err := service.List(context.Background(), 1, domain.ExchangeFilter{Status: " PENDING "})
+	if err != nil || len(exchanges) != 1 {
+		testContext.Fatalf("List() = %+v, %v", exchanges, err)
+	}
+	if exchange, err := service.Get(context.Background(), 1, 8); err != nil || exchange.ID != 8 {
+		testContext.Fatalf("Get() = %+v, %v", exchange, err)
+	}
+	if _, err := service.Get(context.Background(), 3, 8); !errors.Is(err, domain.ErrExchangeForbidden) {
+		testContext.Fatalf("Get() error = %v, want %v", err, domain.ErrExchangeForbidden)
+	}
+}

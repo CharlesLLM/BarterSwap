@@ -3,7 +3,7 @@ package httpapi
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -21,7 +21,7 @@ func writeJSON(responseWriter http.ResponseWriter, status int, value any) {
 	responseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
 	responseWriter.WriteHeader(status)
 	if err := json.NewEncoder(responseWriter).Encode(value); err != nil {
-		log.Printf("écriture de la réponse JSON : %v", err)
+		fmt.Printf("écriture de la réponse JSON : %v\n", err)
 	}
 }
 
@@ -37,7 +37,7 @@ func methodNotAllowed(responseWriter http.ResponseWriter, methods ...string) {
 func writeApplicationError(responseWriter http.ResponseWriter, err error, action string) {
 	status := statusForError(err)
 	if status == http.StatusInternalServerError {
-		log.Printf("%s : %v", action, err)
+		fmt.Printf("%s : %v\n", action, err)
 		writeError(responseWriter, status, "erreur interne")
 		return
 	}

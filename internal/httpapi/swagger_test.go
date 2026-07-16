@@ -20,21 +20,26 @@ func TestSwaggerRoutes(testContext *testing.T) {
 		application.UserService{},
 		application.CatalogService{},
 		application.ExchangeService{},
+		application.ReviewService{},
 	).Routes()
 
 	tests := []struct {
+		method     string
 		path       string
 		wantStatus int
 		wantBody   string
 	}{
-		{path: "/swagger", wantStatus: http.StatusMovedPermanently},
-		{path: "/swagger/", wantStatus: http.StatusOK, wantBody: "SwaggerUIBundle"},
-		{path: "/openapi.yaml", wantStatus: http.StatusOK, wantBody: "openapi: 3.0.3"},
+		{method: http.MethodGet, path: "/swagger", wantStatus: http.StatusMovedPermanently},
+		{method: http.MethodGet, path: "/swagger/", wantStatus: http.StatusOK, wantBody: "SwaggerUIBundle"},
+		{method: http.MethodGet, path: "/openapi.yaml", wantStatus: http.StatusOK, wantBody: "/api/exchanges/{id}/review:"},
+		{method: http.MethodPost, path: "/swagger", wantStatus: http.StatusMethodNotAllowed},
+		{method: http.MethodPost, path: "/swagger/", wantStatus: http.StatusMethodNotAllowed},
+		{method: http.MethodPost, path: "/openapi.yaml", wantStatus: http.StatusMethodNotAllowed},
 	}
 
 	for _, test := range tests {
 		testContext.Run(test.path, func(testCaseContext *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, test.path, nil)
+			request := httptest.NewRequest(test.method, test.path, nil)
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
 

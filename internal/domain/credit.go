@@ -15,3 +15,9 @@ type CreditTransaction struct {
 	Type       string `json:"type"`
 	CreatedAt  string `json:"created_at"`
 }
+
+type CreditChange struct {
+	UserID  int
+	Montant int
+	Type    string
+}

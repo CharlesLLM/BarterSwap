@@ -39,6 +39,37 @@ En local, après avoir défini `DATABASE_URL` :
 go run .
 ```
 
+## Échanges
+
+Toutes les routes d'échange utilisent le header `X-User-ID`.
+
+| Méthode | Route | Description |
+| --- | --- | --- |
+| `POST` | `/api/exchanges` | Créer une demande d'échange |
+| `GET` | `/api/exchanges` | Lister les échanges demandés et reçus |
+| `GET` | `/api/exchanges/{id}` | Consulter un échange |
+| `PUT` | `/api/exchanges/{id}/accept` | Accepter une demande |
+| `PUT` | `/api/exchanges/{id}/reject` | Refuser une demande |
+| `PUT` | `/api/exchanges/{id}/complete` | Terminer un échange accepté |
+| `PUT` | `/api/exchanges/{id}/cancel` | Annuler un échange en attente ou accepté |
+
+La liste accepte le filtre optionnel `status` :
+
+```bash
+curl -H "X-User-ID: 1" \
+  "http://localhost:8080/api/exchanges?status=pending"
+```
+
+Pour demander puis accepter un service :
+
+```bash
+curl -X POST -H "Content-Type: application/json" -H "X-User-ID: 1" \
+  -d '{"service_id": 3}' http://localhost:8080/api/exchanges
+
+curl -X PUT -H "X-User-ID: 2" \
+  http://localhost:8080/api/exchanges/1/accept
+```
+
 ## Tests
 
 Depuis la racine du projet :

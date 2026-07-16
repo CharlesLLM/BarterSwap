@@ -7,12 +7,13 @@ import (
 )
 
 type Handler struct {
-	users   *application.UserService
-	catalog *application.CatalogService
+	users     *application.UserService
+	catalog   *application.CatalogService
+	exchanges *application.ExchangeService
 }
 
-func NewHandler(users *application.UserService, catalog *application.CatalogService) *Handler {
-	return &Handler{users: users, catalog: catalog}
+func NewHandler(users *application.UserService, catalog *application.CatalogService, exchanges *application.ExchangeService) *Handler {
+	return &Handler{users: users, catalog: catalog, exchanges: exchanges}
 }
 
 func (handler *Handler) Routes() http.Handler {
@@ -21,5 +22,7 @@ func (handler *Handler) Routes() http.Handler {
 	mux.HandleFunc("/api/users/", handler.userHandler)
 	mux.HandleFunc("/api/services", handler.servicesHandler)
 	mux.HandleFunc("/api/services/", handler.serviceHandler)
+	mux.HandleFunc("/api/exchanges", handler.exchangesHandler)
+	mux.HandleFunc("/api/exchanges/", handler.exchangeHandler)
 	return mux
 }

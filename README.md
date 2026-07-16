@@ -1,4 +1,4 @@
-# BarterSwap
+# BarterSwap — API d'échange de compétences
 
 API Go de mise en relation pour des échanges de services.
 
@@ -25,20 +25,12 @@ La couche `application` dépend d'interfaces de repository. Elle peut donc être
 testée sans serveur HTTP ni base de données, et l'implémentation PostgreSQL peut
 être remplacée sans modifier les règles métier.
 
-## Lancement
-
-1e étape : Ajouter la variable DATABASE_URL dans le .env
-
-Avec Docker Compose :
+## Installation
 
 ```bash
+git clone https://github.com/CharlesLLM/BarterSwap
+cd BarterSwap
 docker compose up --build
-```
-
-En local, après avoir défini `DATABASE_URL` :
-
-```bash
-go run .
 ```
 
 ## Swagger
@@ -56,26 +48,35 @@ brut est également disponible sur `http://localhost:8080/openapi.yaml`.
 Swagger UI est chargé depuis un CDN ; une connexion Internet est donc nécessaire
 pour l'interface graphique, mais pas pour consulter le schéma OpenAPI brut.
 
-## Échanges
+## Endpoints
 
-Toutes les routes d'échange utilisent le header `X-User-ID`.
-
-| Méthode | Route | Description |
-| --- | --- | --- |
-| `POST` | `/api/exchanges` | Créer une demande d'échange |
-| `GET` | `/api/exchanges` | Lister les échanges demandés et reçus |
-| `GET` | `/api/exchanges/{id}` | Consulter un échange |
-| `PUT` | `/api/exchanges/{id}/accept` | Accepter une demande |
-| `PUT` | `/api/exchanges/{id}/reject` | Refuser une demande |
-| `PUT` | `/api/exchanges/{id}/complete` | Terminer un échange accepté |
-| `PUT` | `/api/exchanges/{id}/cancel` | Annuler un échange en attente ou accepté |
-
-La liste accepte le filtre optionnel `status` :
-
-```bash
-curl -H "X-User-ID: 1" \
-  "http://localhost:8080/api/exchanges?status=pending"
-```
+| Méthode  | Route                          | Description                                                            | Authentification                                     |
+| -------- | ------------------------------ | ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| `POST`   | `/api/users`                   | Créer un compte utilisateur                                            | Non                                                  |
+| `GET`    | `/api/users`                   | Lister les utilisateurs                                                | Non                                                  |
+| `GET`    | `/api/users/{id}`              | Consulter le profil public d'un utilisateur                            | Non (données privées visibles si `X-User-ID = {id}`) |
+| `PUT`    | `/api/users/{id}`              | Modifier son profil                                                    | Oui (`X-User-ID = {id}`)                             |
+| `DELETE` | `/api/users/{id}`              | Supprimer un utilisateur                                               | Non                                                  |
+| `GET`    | `/api/users/{id}/skills`       | Lister les compétences d'un utilisateur                                | Non                                                  |
+| `PUT`    | `/api/users/{id}/skills`       | Définir les compétences d'un utilisateur                               | Oui (`X-User-ID = {id}`)                             |
+| `GET`    | `/api/users/{id}/reviews`      | Lister les avis reçus par un utilisateur                               | Non                                                  |
+| `GET`    | `/api/users/{id}/stats`        | Consulter les statistiques d'un utilisateur                            | Oui (`X-User-ID = {id}`)                             |
+| `POST`   | `/api/services`                | Publier un service                                                     | Oui                                                  |
+| `GET`    | `/api/services`                | Lister/rechercher les services actifs (`categorie`, `ville`, `search`) | Non                                                  |
+| `GET`    | `/api/services/{id}`           | Consulter un service                                                   | Non                                                  |
+| `PUT`    | `/api/services/{id}`           | Modifier son service                                                   | Oui                                                  |
+| `DELETE` | `/api/services/{id}`           | Supprimer son service                                                  | Oui                                                  |
+| `GET`    | `/api/services/{id}/reviews`   | Lister les avis d'un service                                           | Non                                                  |
+| `POST`   | `/api/exchanges`               | Créer une demande d'échange                                            | Oui                                                  |
+| `GET`    | `/api/exchanges`               | Lister ses échanges (`status` optionnel)                               | Oui                                                  |
+| `GET`    | `/api/exchanges/{id}`          | Consulter un échange                                                   | Oui                                                  |
+| `PUT`    | `/api/exchanges/{id}/accept`   | Accepter un échange en attente                                         | Oui                                                  |
+| `PUT`    | `/api/exchanges/{id}/reject`   | Refuser un échange en attente                                          | Oui                                                  |
+| `PUT`    | `/api/exchanges/{id}/complete` | Terminer un échange accepté                                            | Oui                                                  |
+| `PUT`    | `/api/exchanges/{id}/cancel`   | Annuler un échange en attente ou accepté                               | Oui                                                  |
+| `POST`   | `/api/exchanges/{id}/review`   | Créer un avis après échange terminé                                    | Oui                                                  |
+| `GET`    | `/openapi.yaml`                | Télécharger le schéma OpenAPI                                          | Non                                                  |
+| `GET`    | `/swagger/`                    | Ouvrir Swagger UI                                                      | Non                                                  |
 
 ## Parcours nominal complet
 
@@ -221,5 +222,5 @@ curl http://localhost:8080/api/services/1/reviews
 Depuis la racine du projet :
 
 ```bash
-go test -v ./...
+go test -v -cover ./...
 ```

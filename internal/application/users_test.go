@@ -8,34 +8,49 @@ import (
 	"github.com/CharlesLLM/BarterSwap/internal/domain"
 )
 
-type userRepositoryStub struct{}
+type userRepositoryStub struct {
+	stats       domain.UserStats
+	statsErr    error
+	lastStatsID int
+}
 
-func (userRepositoryStub) CreateUser(_ context.Context, input domain.CreateUserInput) (domain.User, error) {
+func (repository *userRepositoryStub) CreateUser(_ context.Context, input domain.CreateUserInput) (domain.User, error) {
 	return domain.User{ID: 1, Pseudo: input.Pseudo, Bio: input.Bio, Ville: input.Ville}, nil
 }
 
-func (userRepositoryStub) ListUsers(context.Context) ([]domain.User, error) {
+func (repository *userRepositoryStub) ListUsers(context.Context) ([]domain.User, error) {
 	return []domain.User{{ID: 1, Pseudo: "Alice"}}, nil
 }
 
-func (userRepositoryStub) FindUser(context.Context, int) (domain.User, error) {
+func (repository *userRepositoryStub) FindUser(context.Context, int) (domain.User, error) {
 	return domain.User{ID: 1, Pseudo: "Alice"}, nil
 }
 
-func (userRepositoryStub) UpdateUser(_ context.Context, id int, input domain.CreateUserInput) (domain.User, error) {
+func (repository *userRepositoryStub) GetUserStats(_ context.Context, id int) (domain.UserStats, error) {
+	repository.lastStatsID = id
+	if repository.statsErr != nil {
+		return domain.UserStats{}, repository.statsErr
+	}
+	if repository.stats.UserID != 0 {
+		return repository.stats, nil
+	}
+	return domain.UserStats{UserID: id}, nil
+}
+
+func (repository *userRepositoryStub) UpdateUser(_ context.Context, id int, input domain.CreateUserInput) (domain.User, error) {
 	return domain.User{ID: id, Pseudo: input.Pseudo}, nil
 }
 
-func (userRepositoryStub) DeleteUser(context.Context, int) error { return nil }
+func (repository *userRepositoryStub) DeleteUser(context.Context, int) error { return nil }
 
-func (userRepositoryStub) ListSkills(context.Context, int) ([]domain.Skill, error) {
+func (repository *userRepositoryStub) ListSkills(context.Context, int) ([]domain.Skill, error) {
 	return []domain.Skill{{Nom: domain.CategoryJardinage, Niveau: domain.SkillLevelBeginner}}, nil
 }
 
-func (userRepositoryStub) ReplaceSkills(context.Context, int, []domain.Skill) error { return nil }
+func (repository *userRepositoryStub) ReplaceSkills(context.Context, int, []domain.Skill) error { return nil }
 
 func TestUserService(testContext *testing.T) {
-	service := NewUserService(userRepositoryStub{})
+	service := NewUserService(&userRepositoryStub{})
 	ctx := context.Background()
 
 	created, err := service.Create(ctx, domain.CreateUserInput{Pseudo: " Alice ", Bio: " Bio ", Ville: " Paris "})
@@ -69,7 +84,7 @@ func TestUserService(testContext *testing.T) {
 }
 
 func TestUserValidation(testContext *testing.T) {
-	service := NewUserService(userRepositoryStub{})
+	service := NewUserService(&userRepositoryStub{})
 	ctx := context.Background()
 
 	if _, err := service.Create(ctx, domain.CreateUserInput{Pseudo: " "}); !errors.Is(err, domain.ErrPseudoRequired) {
@@ -101,4 +116,40 @@ func TestUserValidation(testContext *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUserServiceStats(testContext *testing.T) {
+	testContext.Run("retourne les statistiques du repository", func(testCaseContext *testing.T) {
+		repository := &userRepositoryStub{
+			stats: domain.UserStats{
+				UserID:         7,
+				ServicesActifs: 3,
+				CreditBalance:  12,
+				TotalGagne:     8,
+				TotalDepense:   6,
+			},
+		}
+		service := NewUserService(repository)
+
+		stats, err := service.Stats(context.Background(), 7)
+		if err != nil {
+			testCaseContext.Fatalf("Stats() error = %v", err)
+		}
+		if repository.lastStatsID != 7 {
+			testCaseContext.Fatalf("GetUserStats() called with id = %d, want 7", repository.lastStatsID)
+		}
+		if stats != repository.stats {
+			testCaseContext.Fatalf("Stats() = %+v, want %+v", stats, repository.stats)
+		}
+	})
+
+	testContext.Run("propage les erreurs du repository", func(testCaseContext *testing.T) {
+		repository := &userRepositoryStub{statsErr: domain.ErrUserNotFound}
+		service := NewUserService(repository)
+
+		_, err := service.Stats(context.Background(), 99)
+		if !errors.Is(err, domain.ErrUserNotFound) {
+			testCaseContext.Fatalf("Stats() error = %v, want %v", err, domain.ErrUserNotFound)
+		}
+	})
 }

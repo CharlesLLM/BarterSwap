@@ -113,6 +113,42 @@ func (store Store) FindUser(ctx context.Context, id int) (domain.User, error) {
 	return user, nil
 }
 
+func (store Store) GetUserStats(ctx context.Context, id int) (domain.UserStats, error) {
+	var userExists bool
+	if err := store.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`, id).Scan(&userExists); err != nil {
+		return domain.UserStats{}, fmt.Errorf("vérification de l'utilisateur : %w", err)
+	}
+	if !userExists {
+		return domain.UserStats{}, domain.ErrUserNotFound
+	}
+
+	var stats domain.UserStats
+	err := store.db.QueryRowContext(ctx, `
+		SELECT
+			$1 AS user_id,
+			(SELECT COUNT(*) FROM services WHERE provider_id = $1 AND actif = TRUE) AS services_actifs,
+			0 AS echanges_completes,
+			COALESCE((SELECT SUM(montant) FROM credit_transactions WHERE user_id = $1), 0) AS credit_balance,
+			0::DOUBLE PRECISION AS note_moyenne,
+			0 AS nb_avis,
+			COALESCE((SELECT SUM(CASE WHEN type = 'earn' THEN ABS(montant) ELSE 0 END) FROM credit_transactions WHERE user_id = $1), 0) AS total_gagne,
+			COALESCE((SELECT SUM(CASE WHEN type = 'spend' THEN ABS(montant) ELSE 0 END) FROM credit_transactions WHERE user_id = $1), 0) AS total_depense
+	`, id).Scan(
+		&stats.UserID,
+		&stats.ServicesActifs,
+		&stats.EchangesCompletes,
+		&stats.CreditBalance,
+		&stats.NoteMoyenne,
+		&stats.NbAvis,
+		&stats.TotalGagne,
+		&stats.TotalDepense,
+	)
+	if err != nil {
+		return domain.UserStats{}, fmt.Errorf("lecture des statistiques utilisateur : %w", err)
+	}
+	return stats, nil
+}
+
 func (store Store) UpdateUser(ctx context.Context, id int, input domain.CreateUserInput) (domain.User, error) {
 	result, err := store.db.ExecContext(ctx, `UPDATE users
 		SET pseudo = $2, bio = $3, ville = $4

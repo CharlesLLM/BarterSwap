@@ -20,6 +20,7 @@ func TestSwaggerRoutes(testContext *testing.T) {
 		application.UserService{},
 		application.CatalogService{},
 		application.ExchangeService{},
+		application.ReviewService{},
 	).Routes()
 
 	tests := []struct {
@@ -29,7 +30,7 @@ func TestSwaggerRoutes(testContext *testing.T) {
 	}{
 		{path: "/swagger", wantStatus: http.StatusMovedPermanently},
 		{path: "/swagger/", wantStatus: http.StatusOK, wantBody: "SwaggerUIBundle"},
-		{path: "/openapi.yaml", wantStatus: http.StatusOK, wantBody: "openapi: 3.0.3"},
+		{path: "/openapi.yaml", wantStatus: http.StatusOK, wantBody: "/api/exchanges/{id}/review:"},
 	}
 
 	for _, test := range tests {

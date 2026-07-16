@@ -80,3 +80,18 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS credit_transactions_exchange_id_idx
     ON credit_transactions(exchange_id);
+
+CREATE TABLE IF NOT EXISTS reviews (
+    id BIGSERIAL PRIMARY KEY,
+    exchange_id BIGINT NOT NULL REFERENCES exchanges(id) ON DELETE CASCADE,
+    author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    note INTEGER NOT NULL CHECK (note BETWEEN 1 AND 5),
+    commentaire TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (exchange_id, author_id),
+    CHECK (author_id <> target_id)
+);
+
+CREATE INDEX IF NOT EXISTS reviews_target_id_idx ON reviews(target_id);
+CREATE INDEX IF NOT EXISTS reviews_exchange_id_idx ON reviews(exchange_id);

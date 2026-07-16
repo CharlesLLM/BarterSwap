@@ -193,6 +193,27 @@ Le résultat attendu est :
 - Alice possède 13 crédits : 10 crédits de bienvenue et 3 crédits gagnés ;
 - Bob possède 7 crédits : 10 crédits de bienvenue et 3 crédits dépensés.
 
+### 10. Évaluer l'échange
+
+Une fois l'échange terminé, Bob peut évaluer Alice. L'auteur et le destinataire
+sont déduits automatiquement de l'échange.
+
+```bash
+curl -X POST -H "Content-Type: application/json" -H "X-User-ID: 2" \
+  -d '{
+    "note": 5,
+    "commentaire": "Service excellent et très pédagogique"
+  }' \
+  http://localhost:8080/api/exchanges/1/review
+```
+
+L'avis est ensuite visible sur le profil d'Alice et sur le service :
+
+```bash
+curl http://localhost:8080/api/users/1/reviews
+curl http://localhost:8080/api/services/1/reviews
+```
+
 ## Tests
 
 Depuis la racine du projet :

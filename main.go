@@ -39,7 +39,8 @@ func main() {
 	userService := application.NewUserService(store)
 	catalogService := application.NewCatalogService(store)
 	exchangeService := application.NewExchangeService(store)
-	handler := httpapi.NewHandler(userService, catalogService, exchangeService)
+	reviewService := application.NewReviewService(store)
+	handler := httpapi.NewHandler(userService, catalogService, exchangeService, reviewService)
 
 	server := http.Server{
 		Addr:              ":8080",

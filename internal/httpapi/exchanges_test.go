@@ -56,7 +56,12 @@ func TestExchangeRoutes(testContext *testing.T) {
 		ID: 8, ServiceID: 5, RequesterID: 1, OwnerID: 2, Status: domain.ExchangeStatusPending, Credits: 3,
 	}}
 	exchangeService := application.NewExchangeService(repository)
-	handler := NewHandler(application.UserService{}, application.CatalogService{}, exchangeService).Routes()
+	handler := NewHandler(
+		application.UserService{},
+		application.CatalogService{},
+		exchangeService,
+		application.ReviewService{},
+	).Routes()
 
 	tests := []struct {
 		name       string

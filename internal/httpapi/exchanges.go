@@ -37,6 +37,14 @@ func (handler Handler) exchangeHandler(responseWriter http.ResponseWriter, reque
 		handler.getExchange(responseWriter, request, exchangeID)
 		return
 	}
+	if parts[1] == "review" {
+		if request.Method != http.MethodPost {
+			methodNotAllowed(responseWriter, http.MethodPost)
+			return
+		}
+		handler.createReview(responseWriter, request, exchangeID)
+		return
+	}
 
 	if request.Method != http.MethodPut {
 		methodNotAllowed(responseWriter, http.MethodPut)

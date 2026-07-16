@@ -10,6 +10,7 @@ tags:
   - name: Utilisateurs
   - name: Services
   - name: Échanges
+  - name: Évaluations
 
 paths:
   /api/users:
@@ -134,6 +135,24 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/users/{id}/reviews:
+    get:
+      tags: [Évaluations]
+      summary: Lister les avis reçus par un utilisateur
+      parameters:
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Avis reçus par l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/services:
     get:
       tags: [Services]
@@ -238,6 +257,24 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/services/{id}/reviews:
+    get:
+      tags: [Évaluations]
+      summary: Lister les avis liés à un service
+      parameters:
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          description: Avis publiés pour le service
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -393,6 +430,38 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  /api/exchanges/{id}/review:
+    post:
+      tags: [Évaluations]
+      summary: Évaluer l'autre participant après un échange terminé
+      security:
+        - UserID: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReview'
+      responses:
+        '201':
+          description: Avis publié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
 components:
   securitySchemes:
@@ -594,5 +663,41 @@ components:
           type: string
           format: date-time
         updated_at:
+          type: string
+          format: date-time
+
+    CreateReview:
+      type: object
+      required: [note]
+      additionalProperties: false
+      properties:
+        note:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        commentaire:
+          type: string
+          example: Service excellent et très pédagogique
+
+    Review:
+      type: object
+      required: [id, exchange_id, author_id, target_id, note, created_at]
+      properties:
+        id:
+          type: integer
+        exchange_id:
+          type: integer
+        author_id:
+          type: integer
+        target_id:
+          type: integer
+        note:
+          type: integer
+          minimum: 1
+          maximum: 5
+        commentaire:
+          type: string
+        created_at:
           type: string
           format: date-time

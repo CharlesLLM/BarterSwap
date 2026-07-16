@@ -24,5 +24,8 @@ func (handler Handler) Routes() http.Handler {
 	mux.HandleFunc("/api/services/", handler.serviceHandler)
 	mux.HandleFunc("/api/exchanges", handler.exchangesHandler)
 	mux.HandleFunc("/api/exchanges/", handler.exchangeHandler)
+	mux.HandleFunc("/openapi.yaml", openAPIHandler)
+	mux.HandleFunc("/swagger", swaggerRedirectHandler)
+	mux.HandleFunc("/swagger/", swaggerHandler)
 	return mux
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -47,5 +48,8 @@ func main() {
 	}
 
 	log.Println("serveur démarré sur http://localhost:8080")
-	log.Fatal(server.ListenAndServe())
+
+	if err := server.ListenAndServe(); err != nil {
+		fmt.Println(err)
+	}
 }

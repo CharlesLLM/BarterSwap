@@ -1,0 +1,598 @@
+openapi: 3.0.3
+info:
+  title: BarterSwap API
+  version: 1.0.0
+  description: API d'échange de compétences utilisant des crédits-temps.
+servers:
+  - url: http://localhost:8080
+    description: Serveur local
+tags:
+  - name: Utilisateurs
+  - name: Services
+  - name: Échanges
+
+paths:
+  /api/users:
+    get:
+      tags: [Utilisateurs]
+      summary: Lister les utilisateurs
+      responses:
+        '200':
+          description: Liste des utilisateurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      tags: [Utilisateurs]
+      summary: Créer un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+      responses:
+        '201':
+          description: Utilisateur créé avec 10 crédits de bienvenue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ResourceID'
+    get:
+      tags: [Utilisateurs]
+      summary: Consulter un utilisateur
+      responses:
+        '200':
+          description: Profil public
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Utilisateurs]
+      summary: Modifier un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+      responses:
+        '200':
+          description: Utilisateur modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Utilisateurs]
+      summary: Supprimer un utilisateur
+      responses:
+        '204':
+          description: Utilisateur supprimé
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/users/{id}/skills:
+    parameters:
+      - $ref: '#/components/parameters/ResourceID'
+    get:
+      tags: [Utilisateurs]
+      summary: Lister les compétences d'un utilisateur
+      responses:
+        '200':
+          description: Compétences de l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Skill'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Utilisateurs]
+      summary: Remplacer les compétences d'un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Skill'
+      responses:
+        '200':
+          description: Compétences remplacées
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Skill'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/services:
+    get:
+      tags: [Services]
+      summary: Lister et rechercher les services actifs
+      parameters:
+        - name: categorie
+          in: query
+          schema:
+            $ref: '#/components/schemas/Category'
+        - name: ville
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Liste des services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags: [Services]
+      summary: Publier un service
+      security:
+        - UserID: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateService'
+      responses:
+        '201':
+          description: Service publié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/services/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ResourceID'
+    get:
+      tags: [Services]
+      summary: Consulter un service
+      responses:
+        '200':
+          description: Détail du service
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Services]
+      summary: Modifier son service
+      security:
+        - UserID: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateService'
+      responses:
+        '200':
+          description: Service modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Services]
+      summary: Supprimer son service
+      security:
+        - UserID: []
+      responses:
+        '204':
+          description: Service supprimé
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/exchanges:
+    get:
+      tags: [Échanges]
+      summary: Lister ses échanges demandés et reçus
+      security:
+        - UserID: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ExchangeStatus'
+      responses:
+        '200':
+          description: Liste des échanges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Exchange'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Échanges]
+      summary: Demander un service
+      security:
+        - UserID: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExchange'
+      responses:
+        '201':
+          description: Demande créée avec le statut pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exchange'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/exchanges/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ResourceID'
+    get:
+      tags: [Échanges]
+      summary: Consulter un échange
+      security:
+        - UserID: []
+      responses:
+        '200':
+          description: Détail de l'échange
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exchange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/exchanges/{id}/accept:
+    put:
+      tags: [Échanges]
+      summary: Accepter une demande en tant qu'offreur
+      security:
+        - UserID: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          $ref: '#/components/responses/ExchangeUpdated'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/exchanges/{id}/reject:
+    put:
+      tags: [Échanges]
+      summary: Refuser une demande en tant qu'offreur
+      security:
+        - UserID: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          $ref: '#/components/responses/ExchangeUpdated'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/exchanges/{id}/complete:
+    put:
+      tags: [Échanges]
+      summary: Terminer un échange accepté
+      security:
+        - UserID: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          $ref: '#/components/responses/ExchangeUpdated'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/exchanges/{id}/cancel:
+    put:
+      tags: [Échanges]
+      summary: Annuler un échange en attente ou accepté
+      security:
+        - UserID: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceID'
+      responses:
+        '200':
+          $ref: '#/components/responses/ExchangeUpdated'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    UserID:
+      type: apiKey
+      in: header
+      name: X-User-ID
+
+  parameters:
+    ResourceID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+
+  responses:
+    BadRequest:
+      description: Requête ou règle métier invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Header X-User-ID absent ou invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Action interdite pour cet utilisateur
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Ressource déjà existante ou service déjà réservé
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ExchangeUpdated:
+      description: Statut de l'échange modifié
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Exchange'
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: ressource introuvable
+
+    Skill:
+      type: object
+      required: [nom, niveau]
+      properties:
+        nom:
+          type: string
+          example: Jardinage
+        niveau:
+          type: string
+          enum: [débutant, intermédiaire, expert]
+
+    CreateUser:
+      type: object
+      required: [pseudo]
+      additionalProperties: false
+      properties:
+        pseudo:
+          type: string
+          example: alice
+        bio:
+          type: string
+          example: Passionnée de jardinage
+        ville:
+          type: string
+          example: Paris
+
+    User:
+      type: object
+      required: [id, pseudo, credit_balance, created_at]
+      properties:
+        id:
+          type: integer
+        pseudo:
+          type: string
+        bio:
+          type: string
+        ville:
+          type: string
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+        credit_balance:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    Category:
+      type: string
+      enum:
+        - Informatique
+        - Jardinage
+        - Bricolage
+        - Cuisine
+        - Musique
+        - Langues
+        - Sport
+        - Tutorat
+        - Déménagement
+        - Photographie
+        - Animalier
+        - Couture
+        - Autre
+
+    CreateService:
+      type: object
+      required: [titre, categorie, duree_minutes, credits]
+      additionalProperties: false
+      properties:
+        titre:
+          type: string
+          example: Initiation au jardinage
+        description:
+          type: string
+        categorie:
+          $ref: '#/components/schemas/Category'
+        duree_minutes:
+          type: integer
+          minimum: 1
+          example: 60
+        credits:
+          type: integer
+          minimum: 1
+          example: 3
+        ville:
+          type: string
+          example: Paris
+
+    Service:
+      allOf:
+        - $ref: '#/components/schemas/CreateService'
+        - type: object
+          required: [id, provider_id, actif, created_at]
+          properties:
+            id:
+              type: integer
+            provider_id:
+              type: integer
+            actif:
+              type: boolean
+            created_at:
+              type: string
+              format: date-time
+
+    ExchangeStatus:
+      type: string
+      enum: [pending, accepted, rejected, cancelled, completed]
+
+    CreateExchange:
+      type: object
+      required: [service_id]
+      additionalProperties: false
+      properties:
+        service_id:
+          type: integer
+          minimum: 1
+          example: 1
+
+    Exchange:
+      type: object
+      required: [id, service_id, requester_id, owner_id, status, created_at, updated_at]
+      properties:
+        id:
+          type: integer
+        service_id:
+          type: integer
+        requester_id:
+          type: integer
+        owner_id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/ExchangeStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time

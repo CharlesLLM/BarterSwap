@@ -97,3 +97,13 @@ func TestReviewCannotBeCreatedTwice(testContext *testing.T) {
 		testContext.Fatalf("Create() error = %v, want %v", err, domain.ErrReviewAlreadyExists)
 	}
 }
+
+func TestReviewLists(testContext *testing.T) {
+	service := NewReviewService(reviewRepositoryStub{})
+	if reviews, err := service.ListForUser(context.Background(), 1); err != nil || len(reviews) != 0 {
+		testContext.Fatalf("ListForUser() = %+v, %v", reviews, err)
+	}
+	if reviews, err := service.ListForService(context.Background(), 1); err != nil || len(reviews) != 0 {
+		testContext.Fatalf("ListForService() = %+v, %v", reviews, err)
+	}
+}

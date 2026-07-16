@@ -27,6 +27,8 @@ testée sans serveur HTTP ni base de données, et l'implémentation PostgreSQL p
 
 ## Lancement
 
+1e étape : Ajouter la variable DATABASE_URL dans le .env
+
 Avec Docker Compose :
 
 ```bash

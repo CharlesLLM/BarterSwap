@@ -99,6 +99,12 @@ func TestExchangeRoutes(testContext *testing.T) {
 			userID:     "2",
 			wantStatus: http.StatusOK,
 		},
+		{name: "détail", method: http.MethodGet, path: "/api/exchanges/8", userID: "1", wantStatus: http.StatusOK},
+		{name: "refus", method: http.MethodPut, path: "/api/exchanges/8/reject", userID: "2", wantStatus: http.StatusOK},
+		{name: "annulation", method: http.MethodPut, path: "/api/exchanges/8/cancel", userID: "1", wantStatus: http.StatusOK},
+		{name: "complétion impossible", method: http.MethodPut, path: "/api/exchanges/8/complete", userID: "1", wantStatus: http.StatusBadRequest},
+		{name: "identifiant invalide", method: http.MethodGet, path: "/api/exchanges/abc", wantStatus: http.StatusBadRequest},
+		{name: "méthode refusée", method: http.MethodDelete, path: "/api/exchanges/8", wantStatus: http.StatusMethodNotAllowed},
 		{
 			name:       "action inconnue",
 			method:     http.MethodPut,

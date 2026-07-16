@@ -1,0 +1,97 @@
+package httpapi
+
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/CharlesLLM/BarterSwap/internal/application"
+	"github.com/CharlesLLM/BarterSwap/internal/domain"
+)
+
+type userHTTPRepositoryStub struct{}
+
+func (userHTTPRepositoryStub) CreateUser(_ context.Context, input domain.CreateUserInput) (domain.User, error) {
+	return domain.User{ID: 1, Pseudo: input.Pseudo}, nil
+}
+func (userHTTPRepositoryStub) ListUsers(context.Context) ([]domain.User, error) {
+	return []domain.User{{ID: 1, Pseudo: "Alice"}}, nil
+}
+func (userHTTPRepositoryStub) FindUser(context.Context, int) (domain.User, error) {
+	return domain.User{ID: 1, Pseudo: "Alice"}, nil
+}
+func (userHTTPRepositoryStub) UpdateUser(_ context.Context, id int, input domain.CreateUserInput) (domain.User, error) {
+	return domain.User{ID: id, Pseudo: input.Pseudo}, nil
+}
+func (userHTTPRepositoryStub) DeleteUser(context.Context, int) error { return nil }
+func (userHTTPRepositoryStub) ListSkills(context.Context, int) ([]domain.Skill, error) {
+	return []domain.Skill{{Nom: domain.CategoryJardinage, Niveau: domain.SkillLevelExpert}}, nil
+}
+func (userHTTPRepositoryStub) ReplaceSkills(context.Context, int, []domain.Skill) error { return nil }
+
+type serviceHTTPRepositoryStub struct{}
+
+func (serviceHTTPRepositoryStub) CreateService(_ context.Context, providerID int, input domain.CreateServiceInput) (domain.Service, error) {
+	return domain.Service{ID: 1, ProviderID: providerID, Titre: input.Titre}, nil
+}
+func (serviceHTTPRepositoryStub) ListServices(context.Context, domain.ServiceFilter) ([]domain.Service, error) {
+	return []domain.Service{{ID: 1, Titre: "Jardinage"}}, nil
+}
+func (serviceHTTPRepositoryStub) FindService(context.Context, int) (domain.Service, error) {
+	return domain.Service{ID: 1, ProviderID: 1, Titre: "Jardinage"}, nil
+}
+func (serviceHTTPRepositoryStub) UpdateService(_ context.Context, id int, input domain.CreateServiceInput) (domain.Service, error) {
+	return domain.Service{ID: id, ProviderID: 1, Titre: input.Titre}, nil
+}
+func (serviceHTTPRepositoryStub) DeactivateService(context.Context, int) error { return nil }
+func (serviceHTTPRepositoryStub) ListSkills(context.Context, int) ([]domain.Skill, error) {
+	return []domain.Skill{{Nom: domain.CategoryJardinage, Niveau: domain.SkillLevelExpert}}, nil
+}
+
+func TestUserAndServiceRoutes(testContext *testing.T) {
+	handler := NewHandler(
+		application.NewUserService(userHTTPRepositoryStub{}),
+		application.NewCatalogService(serviceHTTPRepositoryStub{}),
+		application.ExchangeService{},
+		application.ReviewService{},
+	).Routes()
+	serviceBody := `{"titre":"Jardinage","categorie":"Jardinage","duree_minutes":60,"credits":2}`
+
+	tests := []struct {
+		name, method, path, userID, body string
+		wantStatus                       int
+	}{
+		{name: "créer utilisateur", method: http.MethodPost, path: "/api/users", body: `{"pseudo":"Alice"}`, wantStatus: http.StatusCreated},
+		{name: "lister utilisateurs", method: http.MethodGet, path: "/api/users", wantStatus: http.StatusOK},
+		{name: "détail utilisateur", method: http.MethodGet, path: "/api/users/1", wantStatus: http.StatusOK},
+		{name: "modifier utilisateur", method: http.MethodPut, path: "/api/users/1", body: `{"pseudo":"Alice 2"}`, wantStatus: http.StatusOK},
+		{name: "supprimer utilisateur", method: http.MethodDelete, path: "/api/users/1", wantStatus: http.StatusNoContent},
+		{name: "lister compétences", method: http.MethodGet, path: "/api/users/1/skills", wantStatus: http.StatusOK},
+		{name: "modifier compétences", method: http.MethodPut, path: "/api/users/1/skills", body: `[{"nom":"Jardinage","niveau":"expert"}]`, wantStatus: http.StatusOK},
+		{name: "méthode utilisateur refusée", method: http.MethodPatch, path: "/api/users", wantStatus: http.StatusMethodNotAllowed},
+		{name: "identifiant utilisateur invalide", method: http.MethodGet, path: "/api/users/abc", wantStatus: http.StatusBadRequest},
+		{name: "lister services", method: http.MethodGet, path: "/api/services", wantStatus: http.StatusOK},
+		{name: "créer service", method: http.MethodPost, path: "/api/services", userID: "1", body: serviceBody, wantStatus: http.StatusCreated},
+		{name: "détail service", method: http.MethodGet, path: "/api/services/1", wantStatus: http.StatusOK},
+		{name: "modifier service", method: http.MethodPut, path: "/api/services/1", userID: "1", body: serviceBody, wantStatus: http.StatusOK},
+		{name: "supprimer service", method: http.MethodDelete, path: "/api/services/1", userID: "1", wantStatus: http.StatusNoContent},
+		{name: "méthode service refusée", method: http.MethodPatch, path: "/api/services", wantStatus: http.StatusMethodNotAllowed},
+		{name: "route service inconnue", method: http.MethodGet, path: "/api/services/1/inconnue", wantStatus: http.StatusNotFound},
+	}
+
+	for _, test := range tests {
+		testContext.Run(test.name, func(testCaseContext *testing.T) {
+			request := httptest.NewRequest(test.method, test.path, strings.NewReader(test.body))
+			if test.userID != "" {
+				request.Header.Set("X-User-ID", test.userID)
+			}
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, request)
+			if response.Code != test.wantStatus {
+				testCaseContext.Fatalf("status = %d, want %d; body = %s", response.Code, test.wantStatus, response.Body.String())
+			}
+		})
+	}
+}

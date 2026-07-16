@@ -81,19 +81,19 @@ func GetUserSkills(ctx context.Context, store *Store, id int) ([]Skill, error) {
 func ReplaceUserSkills(ctx context.Context, store *Store, id int, skills []Skill) ([]Skill, error) {
 	seen := make(map[string]bool)
 
-	for i := range skills {
-		skills[i].Nom = strings.TrimSpace(skills[i].Nom)
-		skills[i].Niveau = strings.ToLower(strings.TrimSpace(skills[i].Niveau))
+	for index := range skills {
+		skills[index].Nom = strings.TrimSpace(skills[index].Nom)
+		skills[index].Niveau = strings.ToLower(strings.TrimSpace(skills[index].Niveau))
 
-		if skills[i].Nom == "" {
+		if skills[index].Nom == "" {
 			return nil, ErrSkillNameRequired
 		}
 
-		if !validSkillLevel(skills[i].Niveau) {
+		if !validSkillLevel(skills[index].Niveau) {
 			return nil, ErrSkillLevelInvalid
 		}
 
-		key := strings.ToLower(skills[i].Nom)
+		key := strings.ToLower(skills[index].Nom)
 		if seen[key] {
 			return nil, ErrSkillDuplicate
 		}

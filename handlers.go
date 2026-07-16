@@ -10,194 +10,194 @@ import (
 )
 
 func usersHandler(store *Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
+	return func(responseWriter http.ResponseWriter, request *http.Request) {
+		switch request.Method {
 		case http.MethodPost:
-			createUser(w, r, store)
+			createUser(responseWriter, request, store)
 		case http.MethodGet:
-			listUsers(w, r, store)
+			listUsers(responseWriter, request, store)
 		default:
-			w.Header().Set("Allow", "GET, POST")
-			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "méthode non autorisée"})
+			responseWriter.Header().Set("Allow", "GET, POST")
+			writeJSON(responseWriter, http.StatusMethodNotAllowed, map[string]string{"error": "méthode non autorisée"})
 		}
 	}
 }
 
-func createUser(w http.ResponseWriter, r *http.Request, store *Store) {
+func createUser(responseWriter http.ResponseWriter, request *http.Request, store *Store) {
 	var input CreateUserInput
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(request.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON invalide"})
+		writeJSON(responseWriter, http.StatusBadRequest, map[string]string{"error": "JSON invalide"})
 		return
 	}
 
-	user, err := CreateUser(r.Context(), store, input)
+	user, err := CreateUser(request.Context(), store, input)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrPseudoRequired):
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			writeJSON(responseWriter, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		case errors.Is(err, ErrPseudoAlreadyExists):
-			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			writeJSON(responseWriter, http.StatusConflict, map[string]string{"error": err.Error()})
 		default:
 			log.Printf("création de l'utilisateur : %v", err)
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erreur interne"})
+			writeJSON(responseWriter, http.StatusInternalServerError, map[string]string{"error": "erreur interne"})
 		}
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, user)
+	writeJSON(responseWriter, http.StatusCreated, user)
 }
 
-func listUsers(w http.ResponseWriter, r *http.Request, store *Store) {
-	users, err := ListUsers(r.Context(), store)
+func listUsers(responseWriter http.ResponseWriter, request *http.Request, store *Store) {
+	users, err := ListUsers(request.Context(), store)
 	if err != nil {
 		log.Printf("liste des utilisateurs : %v", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erreur interne"})
+		writeJSON(responseWriter, http.StatusInternalServerError, map[string]string{"error": "erreur interne"})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, users)
+	writeJSON(responseWriter, http.StatusOK, users)
 }
 
 func userHandler(store *Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		value := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/users/"), "/")
+	return func(responseWriter http.ResponseWriter, request *http.Request) {
+		value := strings.Trim(strings.TrimPrefix(request.URL.Path, "/api/users/"), "/")
 		parts := strings.Split(value, "/")
 		id, err := strconv.Atoi(parts[0])
 
 		if err != nil || id <= 0 {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "identifiant invalide"})
+			writeJSON(responseWriter, http.StatusBadRequest, map[string]string{"error": "identifiant invalide"})
 			return
 		}
 
 		if len(parts) == 1 {
-			switch r.Method {
+			switch request.Method {
 			case http.MethodGet:
-				getUser(w, r, store, id)
+				getUser(responseWriter, request, store, id)
 			case http.MethodPut:
-				updateUser(w, r, store, id)
+				updateUser(responseWriter, request, store, id)
 			case http.MethodDelete:
-				deleteUser(w, r, store, id)
+				deleteUser(responseWriter, request, store, id)
 			default:
-				w.Header().Set("Allow", "GET, PUT, DELETE")
-				writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "méthode non autorisée"})
+				responseWriter.Header().Set("Allow", "GET, PUT, DELETE")
+				writeJSON(responseWriter, http.StatusMethodNotAllowed, map[string]string{"error": "méthode non autorisée"})
 			}
 
 			return
 		}
 
 		if len(parts) == 2 && parts[1] == "skills" {
-			switch r.Method {
+			switch request.Method {
 			case http.MethodGet:
-				getUserSkills(w, r, store, id)
+				getUserSkills(responseWriter, request, store, id)
 			case http.MethodPut:
-				replaceUserSkills(w, r, store, id)
+				replaceUserSkills(responseWriter, request, store, id)
 			default:
-				w.Header().Set("Allow", "GET, PUT")
-				writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "méthode non autorisée"})
+				responseWriter.Header().Set("Allow", "GET, PUT")
+				writeJSON(responseWriter, http.StatusMethodNotAllowed, map[string]string{"error": "méthode non autorisée"})
 			}
 
 			return
 		}
 
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "route introuvable"})
+		writeJSON(responseWriter, http.StatusNotFound, map[string]string{"error": "route introuvable"})
 	}
 }
 
-func getUser(w http.ResponseWriter, r *http.Request, store *Store, id int) {
-	user, err := GetUser(r.Context(), store, id)
+func getUser(responseWriter http.ResponseWriter, request *http.Request, store *Store, id int) {
+	user, err := GetUser(request.Context(), store, id)
 
 	if err != nil {
-		writeUserError(w, err, "lecture de l'utilisateur")
+		writeUserError(responseWriter, err, "lecture de l'utilisateur")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, user)
+	writeJSON(responseWriter, http.StatusOK, user)
 }
 
-func updateUser(w http.ResponseWriter, r *http.Request, store *Store, id int) {
+func updateUser(responseWriter http.ResponseWriter, request *http.Request, store *Store, id int) {
 	var input CreateUserInput
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(request.Body)
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON invalide"})
+		writeJSON(responseWriter, http.StatusBadRequest, map[string]string{"error": "JSON invalide"})
 		return
 	}
 
-	user, err := UpdateUser(r.Context(), store, id, input)
+	user, err := UpdateUser(request.Context(), store, id, input)
 
 	if err != nil {
-		writeUserError(w, err, "modification de l'utilisateur")
+		writeUserError(responseWriter, err, "modification de l'utilisateur")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, user)
+	writeJSON(responseWriter, http.StatusOK, user)
 }
 
-func deleteUser(w http.ResponseWriter, r *http.Request, store *Store, id int) {
-	if err := DeleteUser(r.Context(), store, id); err != nil {
-		writeUserError(w, err, "suppression de l'utilisateur")
+func deleteUser(responseWriter http.ResponseWriter, request *http.Request, store *Store, id int) {
+	if err := DeleteUser(request.Context(), store, id); err != nil {
+		writeUserError(responseWriter, err, "suppression de l'utilisateur")
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	responseWriter.WriteHeader(http.StatusNoContent)
 }
 
-func getUserSkills(w http.ResponseWriter, r *http.Request, store *Store, id int) {
-	skills, err := GetUserSkills(r.Context(), store, id)
+func getUserSkills(responseWriter http.ResponseWriter, request *http.Request, store *Store, id int) {
+	skills, err := GetUserSkills(request.Context(), store, id)
 
 	if err != nil {
-		writeUserError(w, err, "lecture des compétences")
+		writeUserError(responseWriter, err, "lecture des compétences")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, skills)
+	writeJSON(responseWriter, http.StatusOK, skills)
 }
 
-func replaceUserSkills(w http.ResponseWriter, r *http.Request, store *Store, id int) {
+func replaceUserSkills(responseWriter http.ResponseWriter, request *http.Request, store *Store, id int) {
 	var skills []Skill
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(request.Body)
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&skills); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "JSON invalide"})
+		writeJSON(responseWriter, http.StatusBadRequest, map[string]string{"error": "JSON invalide"})
 		return
 	}
 
-	skills, err := ReplaceUserSkills(r.Context(), store, id, skills)
+	skills, err := ReplaceUserSkills(request.Context(), store, id, skills)
 
 	if err != nil {
-		writeUserError(w, err, "modification des compétences")
+		writeUserError(responseWriter, err, "modification des compétences")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, skills)
+	writeJSON(responseWriter, http.StatusOK, skills)
 }
 
-func writeUserError(w http.ResponseWriter, err error, action string) {
+func writeUserError(responseWriter http.ResponseWriter, err error, action string) {
 	switch {
 	case errors.Is(err, ErrPseudoRequired),
 		errors.Is(err, ErrSkillNameRequired),
 		errors.Is(err, ErrSkillLevelInvalid),
 		errors.Is(err, ErrSkillDuplicate):
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		writeJSON(responseWriter, http.StatusBadRequest, map[string]string{"error": err.Error()})
 	case errors.Is(err, ErrPseudoAlreadyExists):
-		writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+		writeJSON(responseWriter, http.StatusConflict, map[string]string{"error": err.Error()})
 	case errors.Is(err, ErrUserNotFound):
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		writeJSON(responseWriter, http.StatusNotFound, map[string]string{"error": err.Error()})
 	default:
 		log.Printf("%s : %v", action, err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erreur interne"})
+		writeJSON(responseWriter, http.StatusInternalServerError, map[string]string{"error": "erreur interne"})
 	}
 }
 
-func writeJSON(w http.ResponseWriter, status int, value interface{}) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
+func writeJSON(responseWriter http.ResponseWriter, status int, value interface{}) {
+	responseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
+	responseWriter.WriteHeader(status)
 
-	if err := json.NewEncoder(w).Encode(value); err != nil {
-		log.Printf("écriture de la réponse JSON : %v", err)
+	if err := json.NewEncoder(responseWriter).Encode(value); err != nil {
+		log.Printf("écriture de la requestéponse JSON : %v", err)
 	}
 }

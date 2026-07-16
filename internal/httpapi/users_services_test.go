@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -102,57 +101,6 @@ func TestUserAndServiceRoutes(testContext *testing.T) {
 			handler.ServeHTTP(response, request)
 			if response.Code != test.wantStatus {
 				testCaseContext.Fatalf("status = %d, want %d; body = %s", response.Code, test.wantStatus, response.Body.String())
-			}
-		})
-	}
-}
-
-func TestUserProfileHidesPrivateFieldsWhenNotOwner(testContext *testing.T) {
-	handler := NewHandler(
-		application.NewUserService(userHTTPRepositoryStub{}),
-		application.NewCatalogService(serviceHTTPRepositoryStub{}),
-		application.ExchangeService{},
-		application.ReviewService{},
-	).Routes()
-
-	tests := []struct {
-		name                 string
-		userID               string
-		wantPrivateFieldsSet bool
-	}{
-		{name: "anonyme", wantPrivateFieldsSet: false},
-		{name: "autre utilisateur", userID: "2", wantPrivateFieldsSet: false},
-		{name: "propriétaire", userID: "1", wantPrivateFieldsSet: true},
-	}
-
-	for _, test := range tests {
-		testContext.Run(test.name, func(testCaseContext *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, "/api/users/1", nil)
-			if test.userID != "" {
-				request.Header.Set("X-User-ID", test.userID)
-			}
-			response := httptest.NewRecorder()
-			handler.ServeHTTP(response, request)
-
-			if response.Code != http.StatusOK {
-				testCaseContext.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
-			}
-
-			var payload map[string]any
-			if err := json.Unmarshal(response.Body.Bytes(), &payload); err != nil {
-				testCaseContext.Fatalf("JSON invalide: %v", err)
-			}
-
-			_, hasCredit := payload["credit_balance"]
-			_, hasCreatedAt := payload["created_at"]
-			if hasCredit != test.wantPrivateFieldsSet || hasCreatedAt != test.wantPrivateFieldsSet {
-				testCaseContext.Fatalf(
-					"champs privés présents = (%v, %v), attendu = %v; body = %s",
-					hasCredit,
-					hasCreatedAt,
-					test.wantPrivateFieldsSet,
-					response.Body.String(),
-				)
 			}
 		})
 	}

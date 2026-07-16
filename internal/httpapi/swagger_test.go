@@ -9,6 +9,12 @@ import (
 	"github.com/CharlesLLM/BarterSwap/internal/application"
 )
 
+func TestOpenAPISpecIsEmbedded(testContext *testing.T) {
+	if len(openAPISpec) == 0 {
+		testContext.Fatal("le schéma OpenAPI embarqué est vide")
+	}
+}
+
 func TestSwaggerRoutes(testContext *testing.T) {
 	handler := NewHandler(
 		application.UserService{},

@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+//go:embed openapi.yaml
 var openAPISpec []byte
 
 const swaggerPage = `<!doctype html>

@@ -6,6 +6,10 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/CharlesLLM/BarterSwap/internal/application"
+	"github.com/CharlesLLM/BarterSwap/internal/httpapi"
+	"github.com/CharlesLLM/BarterSwap/internal/postgres"
 )
 
 func main() {
@@ -17,26 +21,27 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	store, err := NewStore(ctx, databaseURL)
+	store, err := postgres.New(ctx, databaseURL)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	defer store.Close()
+	defer func() {
+		if err := store.Close(); err != nil {
+			log.Printf("fermeture de la base de données : %v", err)
+		}
+	}()
 
 	if err := store.CreateSchema(ctx); err != nil {
 		log.Fatal(err)
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/users", usersHandler(store))
-	mux.HandleFunc("/api/users/", userHandler(store))
-	mux.HandleFunc("/api/services", servicesHandler(store))
-	mux.HandleFunc("/api/services/", serviceHandler(store))
+	userService := application.NewUserService(store)
+	catalogService := application.NewCatalogService(store)
+	handler := httpapi.NewHandler(userService, catalogService)
 
 	server := &http.Server{
 		Addr:              ":8080",
-		Handler:           mux,
+		Handler:           handler.Routes(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

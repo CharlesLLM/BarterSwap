@@ -4,7 +4,7 @@ services:
       dockerfile: docker/Dockerfile
     user: go
     working_dir: /home/go
-    command: go run ./cmd/api
+    command: go run .
     environment:
       DATABASE_URL: ${DATABASE_URL}
     ports:

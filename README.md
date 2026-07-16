@@ -5,7 +5,7 @@ API Go de mise en relation pour des échanges de services.
 ## Architecture
 
 ```text
-cmd/api/                 Point d'entrée et assemblage des dépendances
+main.go                  Point d'entrée et assemblage des dépendances
 internal/
   domain/                Entités, constantes et erreurs métier
   application/           Cas d'usage et validation métier
@@ -18,7 +18,7 @@ Les dépendances vont de l'extérieur vers le domaine :
 ```text
 HTTP -> Application -> Domain
 PostgreSQL ---------> Domain
-          cmd/api assemble le tout
+main.go assemble le tout
 ```
 
 La couche `application` dépend d'interfaces de repository. Elle peut donc être
@@ -36,7 +36,7 @@ docker compose up --build
 En local, après avoir défini `DATABASE_URL` :
 
 ```bash
-go run ./cmd/api
+go run .
 ```
 
 ## Tests

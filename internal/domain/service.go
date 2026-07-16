@@ -1,7 +1,5 @@
 package domain
 
-import "errors"
-
 const (
 	CategoryInformatique = "Informatique"
 	CategoryJardinage    = "Jardinage"
@@ -19,13 +17,13 @@ const (
 )
 
 var (
-	ErrServiceNotFound        = errors.New("service introuvable")
-	ErrServiceTitleRequired   = errors.New("le titre est obligatoire")
-	ErrServiceCategoryInvalid = errors.New("la catégorie est invalide")
-	ErrServiceDurationInvalid = errors.New("la durée doit être supérieure à zéro")
-	ErrServiceCreditsInvalid  = errors.New("le nombre de crédits doit être supérieur à zéro")
-	ErrServiceSkillRequired   = errors.New("l'utilisateur ne possède pas cette compétence")
-	ErrServiceForbidden       = errors.New("vous ne pouvez pas modifier ce service")
+	ErrServiceNotFound        = Error{Kind: ErrorNotFound, Message: "service introuvable"}
+	ErrServiceTitleRequired   = Error{Kind: ErrorValidation, Message: "le titre est obligatoire"}
+	ErrServiceCategoryInvalid = Error{Kind: ErrorValidation, Message: "la catégorie est invalide"}
+	ErrServiceDurationInvalid = Error{Kind: ErrorValidation, Message: "la durée doit être supérieure à zéro"}
+	ErrServiceCreditsInvalid  = Error{Kind: ErrorValidation, Message: "le nombre de crédits doit être supérieur à zéro"}
+	ErrServiceSkillRequired   = Error{Kind: ErrorValidation, Message: "l'utilisateur ne possède pas cette compétence"}
+	ErrServiceForbidden       = Error{Kind: ErrorForbidden, Message: "vous ne pouvez pas modifier ce service"}
 )
 
 type Service struct {

@@ -20,11 +20,11 @@ type CatalogService struct {
 	repository ServiceRepository
 }
 
-func NewCatalogService(repository ServiceRepository) *CatalogService {
-	return &CatalogService{repository: repository}
+func NewCatalogService(repository ServiceRepository) CatalogService {
+	return CatalogService{repository: repository}
 }
 
-func (service *CatalogService) Create(ctx context.Context, providerID int, input domain.CreateServiceInput) (domain.Service, error) {
+func (service CatalogService) Create(ctx context.Context, providerID int, input domain.CreateServiceInput) (domain.Service, error) {
 	input = cleanServiceInput(input)
 	if err := validateServiceInput(input); err != nil {
 		return domain.Service{}, err
@@ -37,7 +37,7 @@ func (service *CatalogService) Create(ctx context.Context, providerID int, input
 	return service.repository.CreateService(ctx, providerID, input)
 }
 
-func (service *CatalogService) List(ctx context.Context, filter domain.ServiceFilter) ([]domain.Service, error) {
+func (service CatalogService) List(ctx context.Context, filter domain.ServiceFilter) ([]domain.Service, error) {
 	filter.Categorie = strings.TrimSpace(filter.Categorie)
 	filter.Ville = strings.TrimSpace(filter.Ville)
 	filter.Search = strings.TrimSpace(filter.Search)
@@ -49,11 +49,11 @@ func (service *CatalogService) List(ctx context.Context, filter domain.ServiceFi
 	return service.repository.ListServices(ctx, filter)
 }
 
-func (service *CatalogService) Get(ctx context.Context, id int) (domain.Service, error) {
+func (service CatalogService) Get(ctx context.Context, id int) (domain.Service, error) {
 	return service.repository.FindService(ctx, id)
 }
 
-func (service *CatalogService) Update(ctx context.Context, userID, id int, input domain.CreateServiceInput) (domain.Service, error) {
+func (service CatalogService) Update(ctx context.Context, userID, id int, input domain.CreateServiceInput) (domain.Service, error) {
 	input = cleanServiceInput(input)
 	if err := validateServiceInput(input); err != nil {
 		return domain.Service{}, err
@@ -75,7 +75,7 @@ func (service *CatalogService) Update(ctx context.Context, userID, id int, input
 	return service.repository.UpdateService(ctx, id, input)
 }
 
-func (service *CatalogService) Delete(ctx context.Context, userID, id int) error {
+func (service CatalogService) Delete(ctx context.Context, userID, id int) error {
 	existingService, err := service.repository.FindService(ctx, id)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func validateServiceInput(input domain.CreateServiceInput) error {
 	return nil
 }
 
-func (service *CatalogService) checkProviderSkill(ctx context.Context, providerID int, category string) error {
+func (service CatalogService) checkProviderSkill(ctx context.Context, providerID int, category string) error {
 	skills, err := service.repository.ListSkills(ctx, providerID)
 	if err != nil {
 		return err

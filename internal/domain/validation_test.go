@@ -42,3 +42,25 @@ func TestIsValidSkillLevel(testContext *testing.T) {
 		})
 	}
 }
+
+func TestIsValidExchangeStatus(testContext *testing.T) {
+	tests := []struct {
+		status string
+		want   bool
+	}{
+		{status: ExchangeStatusPending, want: true},
+		{status: ExchangeStatusAccepted, want: true},
+		{status: ExchangeStatusRejected, want: true},
+		{status: ExchangeStatusCancelled, want: true},
+		{status: ExchangeStatusCompleted, want: true},
+		{status: "inconnu", want: false},
+	}
+
+	for _, test := range tests {
+		testContext.Run(test.status, func(testCaseContext *testing.T) {
+			if got := IsValidExchangeStatus(test.status); got != test.want {
+				testCaseContext.Fatalf("IsValidExchangeStatus(%q) = %v, want %v", test.status, got, test.want)
+			}
+		})
+	}
+}

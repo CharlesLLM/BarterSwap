@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -37,14 +38,18 @@ func main() {
 
 	userService := application.NewUserService(store)
 	catalogService := application.NewCatalogService(store)
-	handler := httpapi.NewHandler(userService, catalogService)
+	exchangeService := application.NewExchangeService(store)
+	handler := httpapi.NewHandler(userService, catalogService, exchangeService)
 
-	server := &http.Server{
+	server := http.Server{
 		Addr:              ":8080",
 		Handler:           handler.Routes(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	log.Println("serveur démarré sur http://localhost:8080")
-	log.Fatal(server.ListenAndServe())
+
+	if err := server.ListenAndServe(); err != nil {
+		fmt.Println(err)
+	}
 }

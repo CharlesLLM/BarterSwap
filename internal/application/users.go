@@ -21,11 +21,11 @@ type UserService struct {
 	repository UserRepository
 }
 
-func NewUserService(repository UserRepository) *UserService {
-	return &UserService{repository: repository}
+func NewUserService(repository UserRepository) UserService {
+	return UserService{repository: repository}
 }
 
-func (service *UserService) Create(ctx context.Context, input domain.CreateUserInput) (domain.User, error) {
+func (service UserService) Create(ctx context.Context, input domain.CreateUserInput) (domain.User, error) {
 	input = cleanUserInput(input)
 	if input.Pseudo == "" {
 		return domain.User{}, domain.ErrPseudoRequired
@@ -34,15 +34,15 @@ func (service *UserService) Create(ctx context.Context, input domain.CreateUserI
 	return service.repository.CreateUser(ctx, input)
 }
 
-func (service *UserService) List(ctx context.Context) ([]domain.User, error) {
+func (service UserService) List(ctx context.Context) ([]domain.User, error) {
 	return service.repository.ListUsers(ctx)
 }
 
-func (service *UserService) Get(ctx context.Context, id int) (domain.User, error) {
+func (service UserService) Get(ctx context.Context, id int) (domain.User, error) {
 	return service.repository.FindUser(ctx, id)
 }
 
-func (service *UserService) Update(ctx context.Context, id int, input domain.CreateUserInput) (domain.User, error) {
+func (service UserService) Update(ctx context.Context, id int, input domain.CreateUserInput) (domain.User, error) {
 	input = cleanUserInput(input)
 	if input.Pseudo == "" {
 		return domain.User{}, domain.ErrPseudoRequired
@@ -51,15 +51,15 @@ func (service *UserService) Update(ctx context.Context, id int, input domain.Cre
 	return service.repository.UpdateUser(ctx, id, input)
 }
 
-func (service *UserService) Delete(ctx context.Context, id int) error {
+func (service UserService) Delete(ctx context.Context, id int) error {
 	return service.repository.DeleteUser(ctx, id)
 }
 
-func (service *UserService) ListSkills(ctx context.Context, id int) ([]domain.Skill, error) {
+func (service UserService) ListSkills(ctx context.Context, id int) ([]domain.Skill, error) {
 	return service.repository.ListSkills(ctx, id)
 }
 
-func (service *UserService) ReplaceSkills(ctx context.Context, id int, skills []domain.Skill) ([]domain.Skill, error) {
+func (service UserService) ReplaceSkills(ctx context.Context, id int, skills []domain.Skill) ([]domain.Skill, error) {
 	seen := make(map[string]bool)
 
 	for index := range skills {

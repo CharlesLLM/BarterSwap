@@ -42,7 +42,7 @@ func scanService(row serviceRow) (domain.Service, error) {
 	return service, nil
 }
 
-func (store *Store) CreateService(ctx context.Context, providerID int, input domain.CreateServiceInput) (domain.Service, error) {
+func (store Store) CreateService(ctx context.Context, providerID int, input domain.CreateServiceInput) (domain.Service, error) {
 	row := store.db.QueryRowContext(ctx, `INSERT INTO services (
 		provider_id, titre, description, categorie, duree_minutes, credits, ville
 	) VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -62,7 +62,7 @@ func (store *Store) CreateService(ctx context.Context, providerID int, input dom
 	return service, nil
 }
 
-func (store *Store) ListServices(ctx context.Context, filter domain.ServiceFilter) ([]domain.Service, error) {
+func (store Store) ListServices(ctx context.Context, filter domain.ServiceFilter) ([]domain.Service, error) {
 	query := `SELECT ` + serviceColumns + ` FROM services WHERE actif = TRUE`
 	args := []any{}
 	if filter.Categorie != "" {
@@ -99,7 +99,7 @@ func (store *Store) ListServices(ctx context.Context, filter domain.ServiceFilte
 	return services, nil
 }
 
-func (store *Store) FindService(ctx context.Context, id int) (domain.Service, error) {
+func (store Store) FindService(ctx context.Context, id int) (domain.Service, error) {
 	row := store.db.QueryRowContext(ctx, `SELECT `+serviceColumns+` FROM services WHERE id = $1 AND actif = TRUE`, id)
 	service, err := scanService(row)
 	if err != nil {
@@ -108,7 +108,7 @@ func (store *Store) FindService(ctx context.Context, id int) (domain.Service, er
 	return service, nil
 }
 
-func (store *Store) UpdateService(ctx context.Context, id int, input domain.CreateServiceInput) (domain.Service, error) {
+func (store Store) UpdateService(ctx context.Context, id int, input domain.CreateServiceInput) (domain.Service, error) {
 	row := store.db.QueryRowContext(ctx, `UPDATE services
 		SET titre = $2, description = $3, categorie = $4,
 			duree_minutes = $5, credits = $6, ville = $7
@@ -129,7 +129,7 @@ func (store *Store) UpdateService(ctx context.Context, id int, input domain.Crea
 	return service, nil
 }
 
-func (store *Store) DeactivateService(ctx context.Context, id int) error {
+func (store Store) DeactivateService(ctx context.Context, id int) error {
 	result, err := store.db.ExecContext(ctx, `UPDATE services SET actif = FALSE WHERE id = $1 AND actif = TRUE`, id)
 	if err != nil {
 		return fmt.Errorf("suppression du service : %w", err)

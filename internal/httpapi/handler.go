@@ -33,5 +33,5 @@ func (handler Handler) Routes() http.Handler {
 	mux.HandleFunc("/openapi.yaml", openAPIHandler)
 	mux.HandleFunc("/swagger", swaggerRedirectHandler)
 	mux.HandleFunc("/swagger/", swaggerHandler)
-	return mux
+	return chain(mux, withLogging, withRecovery, withCORS)
 }

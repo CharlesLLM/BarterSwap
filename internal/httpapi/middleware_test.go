@@ -1,11 +1,11 @@
 package httpapi
 
 import (
+	"bytes"
 	"fmt"
-	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 )
@@ -71,14 +71,11 @@ func TestWithRecoveryHandlesPanic(testContext *testing.T) {
 }
 
 func TestWithLoggingWritesLine(testContext *testing.T) {
-	originalStdout := os.Stdout
-	reader, writer, err := os.Pipe()
-	if err != nil {
-		testContext.Fatalf("os.Pipe() error = %v", err)
-	}
-	os.Stdout = writer
+	originalLogger := logger
+	var output bytes.Buffer
+	logger = slog.New(slog.NewTextHandler(&output, nil))
 	defer func() {
-		os.Stdout = originalStdout
+		logger = originalLogger
 	}()
 
 	handler := withLogging(http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
@@ -90,18 +87,11 @@ func TestWithLoggingWritesLine(testContext *testing.T) {
 
 	handler.ServeHTTP(response, request)
 
-	if err := writer.Close(); err != nil {
-		testContext.Fatalf("writer.Close() error = %v", err)
-	}
-
-	outputBytes, err := io.ReadAll(reader)
-	if err != nil {
-		testContext.Fatalf("io.ReadAll() error = %v", err)
-	}
-
-	output := string(outputBytes)
-	if !strings.Contains(output, "POST /api/services -> 201") {
-		testContext.Fatalf("log output = %q, want contain %q", output, "POST /api/services -> 201")
+	logged := output.String()
+	if !strings.Contains(logged, "method=POST") ||
+		!strings.Contains(logged, "path=/api/services") ||
+		!strings.Contains(logged, "status=201") {
+		testContext.Fatalf("log output = %q, want contain method/path/status", logged)
 	}
 }
 

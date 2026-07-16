@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -15,7 +15,7 @@ import (
 func main() {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
-		fmt.Println("la variable DATABASE_URL est obligatoire")
+		slog.Error("la variable DATABASE_URL est obligatoire")
 		return
 	}
 
@@ -24,17 +24,17 @@ func main() {
 
 	store, err := postgres.New(ctx, databaseURL)
 	if err != nil {
-		fmt.Println(err)
+		slog.Error("initialisation du store postgres", "error", err)
 		return
 	}
 	defer func() {
 		if err := store.Close(); err != nil {
-			fmt.Printf("fermeture de la base de données : %v\n", err)
+			slog.Error("fermeture de la base de données", "error", err)
 		}
 	}()
 
 	if err := store.CreateSchema(ctx); err != nil {
-		fmt.Println(err)
+		slog.Error("création du schéma SQL", "error", err)
 		return
 	}
 
@@ -50,9 +50,9 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	fmt.Println("serveur démarré sur http://localhost:8080")
+	slog.Info("serveur démarré", "url", "http://localhost:8080")
 
 	if err := server.ListenAndServe(); err != nil {
-		fmt.Println(err)
+		slog.Error("arrêt du serveur HTTP", "error", err)
 	}
 }

@@ -3,7 +3,7 @@ package httpapi
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -17,11 +17,13 @@ var statusByErrorKind = map[domain.ErrorKind]int{
 	domain.ErrorNotFound:   http.StatusNotFound,
 }
 
+var logger = slog.Default()
+
 func writeJSON(responseWriter http.ResponseWriter, status int, value any) {
 	responseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
 	responseWriter.WriteHeader(status)
 	if err := json.NewEncoder(responseWriter).Encode(value); err != nil {
-		fmt.Printf("écriture de la réponse JSON : %v\n", err)
+		logger.Error("écriture de la réponse JSON", "error", err)
 	}
 }
 
@@ -37,7 +39,7 @@ func methodNotAllowed(responseWriter http.ResponseWriter, methods ...string) {
 func writeApplicationError(responseWriter http.ResponseWriter, err error, action string) {
 	status := statusForError(err)
 	if status == http.StatusInternalServerError {
-		fmt.Printf("%s : %v\n", action, err)
+		logger.Error(action, "error", err)
 		writeError(responseWriter, status, "erreur interne")
 		return
 	}

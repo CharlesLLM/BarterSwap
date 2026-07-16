@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 )
@@ -23,7 +22,13 @@ func withLogging(next http.Handler) http.Handler {
 
 		next.ServeHTTP(writer, request)
 
-		fmt.Printf("%s %s -> %d (%s)\n", request.Method, request.URL.Path, writer.statusCode, time.Since(startedAt))
+		logger.Info(
+			"requête HTTP",
+			"method", request.Method,
+			"path", request.URL.Path,
+			"status", writer.statusCode,
+			"duration", time.Since(startedAt),
+		)
 	})
 }
 
@@ -31,7 +36,7 @@ func withRecovery(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		defer func() {
 			if recovered := recover(); recovered != nil {
-				fmt.Printf("panic pendant %s %s : %v\n", request.Method, request.URL.Path, recovered)
+				logger.Error("panic pendant la requête HTTP", "method", request.Method, "path", request.URL.Path, "panic", recovered)
 				writeError(responseWriter, http.StatusInternalServerError, "erreur interne")
 			}
 		}()

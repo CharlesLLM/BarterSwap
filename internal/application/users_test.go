@@ -47,7 +47,9 @@ func (repository *userRepositoryStub) ListSkills(context.Context, int) ([]domain
 	return []domain.Skill{{Nom: domain.CategoryJardinage, Niveau: domain.SkillLevelBeginner}}, nil
 }
 
-func (repository *userRepositoryStub) ReplaceSkills(context.Context, int, []domain.Skill) error { return nil }
+func (repository *userRepositoryStub) ReplaceSkills(context.Context, int, []domain.Skill) error {
+	return nil
+}
 
 func TestUserService(testContext *testing.T) {
 	service := NewUserService(&userRepositoryStub{})

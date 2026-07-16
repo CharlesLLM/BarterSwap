@@ -59,7 +59,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserProfile"
+                $ref: "#/components/schemas/User"
         "404":
           $ref: "#/components/responses/NotFound"
     put:
@@ -90,15 +90,6 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
-    delete:
-      tags: [Utilisateurs]
-      summary: Supprimer un utilisateur
-      responses:
-        "204":
-          description: Utilisateur supprimé
-        "404":
-          $ref: "#/components/responses/NotFound"
-
   /api/users/{id}/skills:
     parameters:
       - $ref: "#/components/parameters/ResourceID"
@@ -603,30 +594,6 @@ components:
         created_at:
           type: string
           format: date-time
-
-    UserProfile:
-      type: object
-      required: [id, pseudo]
-      properties:
-        id:
-          type: integer
-        pseudo:
-          type: string
-        bio:
-          type: string
-        ville:
-          type: string
-        skills:
-          type: array
-          items:
-            $ref: "#/components/schemas/Skill"
-        credit_balance:
-          type: integer
-          description: Présent uniquement pour le propriétaire (X-User-ID = id)
-        created_at:
-          type: string
-          format: date-time
-          description: Présent uniquement pour le propriétaire (X-User-ID = id)
 
     UserStats:
       type: object

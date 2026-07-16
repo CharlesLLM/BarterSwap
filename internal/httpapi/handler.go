@@ -29,7 +29,6 @@ func (handler Handler) Routes() http.Handler {
 	mux.HandleFunc("GET /api/users", handler.listUsers)
 	mux.HandleFunc("GET /api/users/{id}", withID(handler.getUser))
 	mux.HandleFunc("PUT /api/users/{id}", withID(handler.updateUser))
-	mux.HandleFunc("DELETE /api/users/{id}", withID(handler.deleteUser))
 	mux.HandleFunc("GET /api/users/{id}/skills", withID(handler.getUserSkills))
 	mux.HandleFunc("PUT /api/users/{id}/skills", withID(handler.replaceUserSkills))
 	mux.HandleFunc("GET /api/users/{id}/reviews", withID(handler.listUserReviews))
@@ -55,7 +54,7 @@ func (handler Handler) Routes() http.Handler {
 	mux.HandleFunc("GET /swagger", swaggerRedirectHandler)
 	mux.HandleFunc("GET /swagger/", swaggerHandler)
 
-	return chain(mux, withLogging, withRecovery, withCORS)
+	return withLogging(withRecovery(withCORS(mux)))
 }
 
 type handlerWithID func(http.ResponseWriter, *http.Request, int)

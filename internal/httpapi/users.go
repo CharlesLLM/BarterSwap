@@ -6,31 +6,6 @@ import (
 	"github.com/CharlesLLM/BarterSwap/internal/domain"
 )
 
-type userProfileResponse struct {
-	ID            int            `json:"id"`
-	Pseudo        string         `json:"pseudo"`
-	Bio           string         `json:"bio,omitempty"`
-	Ville         string         `json:"ville,omitempty"`
-	Skills        []domain.Skill `json:"skills,omitempty"`
-	CreditBalance *int           `json:"credit_balance,omitempty"`
-	CreatedAt     *string        `json:"created_at,omitempty"`
-}
-
-func publicUserProfile(user domain.User, includePrivate bool) userProfileResponse {
-	response := userProfileResponse{
-		ID:     user.ID,
-		Pseudo: user.Pseudo,
-		Bio:    user.Bio,
-		Ville:  user.Ville,
-		Skills: user.Skills,
-	}
-	if includePrivate {
-		response.CreditBalance = &user.CreditBalance
-		response.CreatedAt = &user.CreatedAt
-	}
-	return response
-}
-
 func (handler Handler) createUser(responseWriter http.ResponseWriter, request *http.Request) {
 	var input domain.CreateUserInput
 	if !decodeJSON(responseWriter, request, &input) {
@@ -61,8 +36,7 @@ func (handler Handler) getUser(responseWriter http.ResponseWriter, request *http
 		return
 	}
 
-	requestUserID, valid := positiveInteger(request.Header.Get("X-User-ID"))
-	writeJSON(responseWriter, http.StatusOK, publicUserProfile(user, valid && requestUserID == id))
+	writeJSON(responseWriter, http.StatusOK, user)
 }
 
 func (handler Handler) updateUser(responseWriter http.ResponseWriter, request *http.Request, id int) {
@@ -81,14 +55,6 @@ func (handler Handler) updateUser(responseWriter http.ResponseWriter, request *h
 		return
 	}
 	writeJSON(responseWriter, http.StatusOK, user)
-}
-
-func (handler Handler) deleteUser(responseWriter http.ResponseWriter, request *http.Request, id int) {
-	if err := handler.users.Delete(request.Context(), id); err != nil {
-		writeApplicationError(responseWriter, err, "suppression de l'utilisateur")
-		return
-	}
-	responseWriter.WriteHeader(http.StatusNoContent)
 }
 
 func (handler Handler) getUserSkills(responseWriter http.ResponseWriter, request *http.Request, id int) {

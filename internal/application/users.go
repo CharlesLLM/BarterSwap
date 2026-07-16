@@ -13,7 +13,6 @@ type UserRepository interface {
 	FindUser(context.Context, int) (domain.User, error)
 	GetUserStats(context.Context, int) (domain.UserStats, error)
 	UpdateUser(context.Context, int, domain.CreateUserInput) (domain.User, error)
-	DeleteUser(context.Context, int) error
 	ListSkills(context.Context, int) ([]domain.Skill, error)
 	ReplaceSkills(context.Context, int, []domain.Skill) error
 }
@@ -54,10 +53,6 @@ func (service UserService) Update(ctx context.Context, id int, input domain.Crea
 	}
 
 	return service.repository.UpdateUser(ctx, id, input)
-}
-
-func (service UserService) Delete(ctx context.Context, id int) error {
-	return service.repository.DeleteUser(ctx, id)
 }
 
 func (service UserService) ListSkills(ctx context.Context, id int) ([]domain.Skill, error) {

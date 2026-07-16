@@ -28,7 +28,6 @@ func (userHTTPRepositoryStub) GetUserStats(context.Context, int) (domain.UserSta
 func (userHTTPRepositoryStub) UpdateUser(_ context.Context, id int, input domain.CreateUserInput) (domain.User, error) {
 	return domain.User{ID: id, Pseudo: input.Pseudo}, nil
 }
-func (userHTTPRepositoryStub) DeleteUser(context.Context, int) error { return nil }
 func (userHTTPRepositoryStub) ListSkills(context.Context, int) ([]domain.Skill, error) {
 	return []domain.Skill{{Nom: domain.CategoryJardinage, Niveau: domain.SkillLevelExpert}}, nil
 }
@@ -72,7 +71,6 @@ func TestUserAndServiceRoutes(testContext *testing.T) {
 		{name: "modifier utilisateur", method: http.MethodPut, path: "/api/users/1", userID: "1", body: `{"pseudo":"Alice 2"}`, wantStatus: http.StatusOK},
 		{name: "modifier utilisateur sans header", method: http.MethodPut, path: "/api/users/1", body: `{"pseudo":"Alice 2"}`, wantStatus: http.StatusUnauthorized},
 		{name: "modifier utilisateur interdit", method: http.MethodPut, path: "/api/users/1", userID: "2", body: `{"pseudo":"Alice 2"}`, wantStatus: http.StatusForbidden},
-		{name: "supprimer utilisateur", method: http.MethodDelete, path: "/api/users/1", wantStatus: http.StatusNoContent},
 		{name: "lister compétences", method: http.MethodGet, path: "/api/users/1/skills", wantStatus: http.StatusOK},
 		{name: "modifier compétences", method: http.MethodPut, path: "/api/users/1/skills", userID: "1", body: `[{"nom":"Jardinage","niveau":"expert"}]`, wantStatus: http.StatusOK},
 		{name: "modifier compétences sans header", method: http.MethodPut, path: "/api/users/1/skills", body: `[{"nom":"Jardinage","niveau":"expert"}]`, wantStatus: http.StatusUnauthorized},

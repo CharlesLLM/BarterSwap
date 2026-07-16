@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"bytes"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -92,33 +91,5 @@ func TestWithLoggingWritesLine(testContext *testing.T) {
 		!strings.Contains(logged, "path=/api/services") ||
 		!strings.Contains(logged, "status=201") {
 		testContext.Fatalf("log output = %q, want contain method/path/status", logged)
-	}
-}
-
-func TestChainOrder(testContext *testing.T) {
-	ordered := chain(
-		http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
-			fmt.Fprint(responseWriter, "handler")
-		}),
-		func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
-				fmt.Fprint(responseWriter, "A")
-				next.ServeHTTP(responseWriter, request)
-			})
-		},
-		func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
-				fmt.Fprint(responseWriter, "B")
-				next.ServeHTTP(responseWriter, request)
-			})
-		},
-	)
-
-	request := httptest.NewRequest(http.MethodGet, "/", nil)
-	response := httptest.NewRecorder()
-	ordered.ServeHTTP(response, request)
-
-	if got := response.Body.String(); got != "ABhandler" {
-		testContext.Fatalf("body = %q, want %q", got, "ABhandler")
 	}
 }

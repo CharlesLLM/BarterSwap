@@ -5,16 +5,6 @@ import (
 	"time"
 )
 
-type middleware func(http.Handler) http.Handler
-
-func chain(handler http.Handler, middlewares ...middleware) http.Handler {
-	wrapped := handler
-	for index := len(middlewares) - 1; index >= 0; index-- {
-		wrapped = middlewares[index](wrapped)
-	}
-	return wrapped
-}
-
 func withLogging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		startedAt := time.Now()

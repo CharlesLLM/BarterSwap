@@ -46,3 +46,15 @@ func requireUserID(responseWriter http.ResponseWriter, request *http.Request) (i
 	}
 	return userID, valid
 }
+
+func requireUserMatch(responseWriter http.ResponseWriter, request *http.Request, targetUserID int) bool {
+	userID, valid := requireUserID(responseWriter, request)
+	if !valid {
+		return false
+	}
+	if userID != targetUserID {
+		writeError(responseWriter, http.StatusForbidden, "action interdite")
+		return false
+	}
+	return true
+}

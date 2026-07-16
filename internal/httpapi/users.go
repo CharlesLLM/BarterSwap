@@ -6,6 +6,31 @@ import (
 	"github.com/CharlesLLM/BarterSwap/internal/domain"
 )
 
+type userProfileResponse struct {
+	ID            int            `json:"id"`
+	Pseudo        string         `json:"pseudo"`
+	Bio           string         `json:"bio,omitempty"`
+	Ville         string         `json:"ville,omitempty"`
+	Skills        []domain.Skill `json:"skills,omitempty"`
+	CreditBalance *int           `json:"credit_balance,omitempty"`
+	CreatedAt     *string        `json:"created_at,omitempty"`
+}
+
+func publicUserProfile(user domain.User, includePrivate bool) userProfileResponse {
+	response := userProfileResponse{
+		ID:     user.ID,
+		Pseudo: user.Pseudo,
+		Bio:    user.Bio,
+		Ville:  user.Ville,
+		Skills: user.Skills,
+	}
+	if includePrivate {
+		response.CreditBalance = &user.CreditBalance
+		response.CreatedAt = &user.CreatedAt
+	}
+	return response
+}
+
 func (handler Handler) usersHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	switch request.Method {
 	case http.MethodPost:
@@ -106,10 +131,16 @@ func (handler Handler) getUser(responseWriter http.ResponseWriter, request *http
 		writeApplicationError(responseWriter, err, "lecture de l'utilisateur")
 		return
 	}
-	writeJSON(responseWriter, http.StatusOK, user)
+
+	requestUserID, valid := positiveInteger(request.Header.Get("X-User-ID"))
+	writeJSON(responseWriter, http.StatusOK, publicUserProfile(user, valid && requestUserID == id))
 }
 
 func (handler Handler) updateUser(responseWriter http.ResponseWriter, request *http.Request, id int) {
+	if !requireUserMatch(responseWriter, request, id) {
+		return
+	}
+
 	var input domain.CreateUserInput
 	if !decodeJSON(responseWriter, request, &input) {
 		return
@@ -141,6 +172,10 @@ func (handler Handler) getUserSkills(responseWriter http.ResponseWriter, request
 }
 
 func (handler Handler) replaceUserSkills(responseWriter http.ResponseWriter, request *http.Request, id int) {
+	if !requireUserMatch(responseWriter, request, id) {
+		return
+	}
+
 	var skills []domain.Skill
 	if !decodeJSON(responseWriter, request, &skills) {
 		return
@@ -155,6 +190,10 @@ func (handler Handler) replaceUserSkills(responseWriter http.ResponseWriter, req
 }
 
 func (handler Handler) getUserStats(responseWriter http.ResponseWriter, request *http.Request, id int) {
+	if !requireUserMatch(responseWriter, request, id) {
+		return
+	}
+
 	stats, err := handler.users.Stats(request.Context(), id)
 	if err != nil {
 		writeApplicationError(responseWriter, err, "lecture des statistiques utilisateur")

@@ -125,14 +125,14 @@ func (store Store) GetUserStats(ctx context.Context, id int) (domain.UserStats, 
 	var stats domain.UserStats
 	err := store.db.QueryRowContext(ctx, `
 		SELECT
-			$1 AS user_id,
-			(SELECT COUNT(*) FROM services WHERE provider_id = $1 AND actif = TRUE) AS services_actifs,
+			$1::BIGINT AS user_id,
+			(SELECT COUNT(*) FROM services WHERE provider_id = $1::BIGINT AND actif = TRUE) AS services_actifs,
 			0 AS echanges_completes,
-			COALESCE((SELECT SUM(montant) FROM credit_transactions WHERE user_id = $1), 0) AS credit_balance,
+			COALESCE((SELECT SUM(montant) FROM credit_transactions WHERE user_id = $1::BIGINT), 0) AS credit_balance,
 			0::DOUBLE PRECISION AS note_moyenne,
 			0 AS nb_avis,
-			COALESCE((SELECT SUM(CASE WHEN type = 'earn' THEN ABS(montant) ELSE 0 END) FROM credit_transactions WHERE user_id = $1), 0) AS total_gagne,
-			COALESCE((SELECT SUM(CASE WHEN type = 'spend' THEN ABS(montant) ELSE 0 END) FROM credit_transactions WHERE user_id = $1), 0) AS total_depense
+			COALESCE((SELECT SUM(CASE WHEN type = 'earn' THEN ABS(montant) ELSE 0 END) FROM credit_transactions WHERE user_id = $1::BIGINT), 0) AS total_gagne,
+			COALESCE((SELECT SUM(CASE WHEN type = 'spend' THEN ABS(montant) ELSE 0 END) FROM credit_transactions WHERE user_id = $1::BIGINT), 0) AS total_depense
 	`, id).Scan(
 		&stats.UserID,
 		&stats.ServicesActifs,

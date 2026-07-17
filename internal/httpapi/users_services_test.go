@@ -20,12 +20,14 @@ func (userHTTPRepositoryStub) ListUsers(context.Context) ([]domain.User, error) 
 	return []domain.User{{ID: 1, Pseudo: "Alice"}}, nil
 }
 func (userHTTPRepositoryStub) FindUser(context.Context, int) (domain.User, error) {
-	return domain.User{ID: 1, Pseudo: "Alice"}, nil
+	return domain.User{ID: 1, Pseudo: "Alice", CreditBalance: 10, CreatedAt: "2026-01-01T10:00:00Z"}, nil
+}
+func (userHTTPRepositoryStub) GetUserStats(context.Context, int) (domain.UserStats, error) {
+	return domain.UserStats{UserID: 1, CreditBalance: 10}, nil
 }
 func (userHTTPRepositoryStub) UpdateUser(_ context.Context, id int, input domain.CreateUserInput) (domain.User, error) {
 	return domain.User{ID: id, Pseudo: input.Pseudo}, nil
 }
-func (userHTTPRepositoryStub) DeleteUser(context.Context, int) error { return nil }
 func (userHTTPRepositoryStub) ListSkills(context.Context, int) ([]domain.Skill, error) {
 	return []domain.Skill{{Nom: domain.CategoryJardinage, Niveau: domain.SkillLevelExpert}}, nil
 }
@@ -66,10 +68,16 @@ func TestUserAndServiceRoutes(testContext *testing.T) {
 		{name: "créer utilisateur", method: http.MethodPost, path: "/api/users", body: `{"pseudo":"Alice"}`, wantStatus: http.StatusCreated},
 		{name: "lister utilisateurs", method: http.MethodGet, path: "/api/users", wantStatus: http.StatusOK},
 		{name: "détail utilisateur", method: http.MethodGet, path: "/api/users/1", wantStatus: http.StatusOK},
-		{name: "modifier utilisateur", method: http.MethodPut, path: "/api/users/1", body: `{"pseudo":"Alice 2"}`, wantStatus: http.StatusOK},
-		{name: "supprimer utilisateur", method: http.MethodDelete, path: "/api/users/1", wantStatus: http.StatusNoContent},
+		{name: "modifier utilisateur", method: http.MethodPut, path: "/api/users/1", userID: "1", body: `{"pseudo":"Alice 2"}`, wantStatus: http.StatusOK},
+		{name: "modifier utilisateur sans header", method: http.MethodPut, path: "/api/users/1", body: `{"pseudo":"Alice 2"}`, wantStatus: http.StatusUnauthorized},
+		{name: "modifier utilisateur interdit", method: http.MethodPut, path: "/api/users/1", userID: "2", body: `{"pseudo":"Alice 2"}`, wantStatus: http.StatusForbidden},
 		{name: "lister compétences", method: http.MethodGet, path: "/api/users/1/skills", wantStatus: http.StatusOK},
-		{name: "modifier compétences", method: http.MethodPut, path: "/api/users/1/skills", body: `[{"nom":"Jardinage","niveau":"expert"}]`, wantStatus: http.StatusOK},
+		{name: "modifier compétences", method: http.MethodPut, path: "/api/users/1/skills", userID: "1", body: `[{"nom":"Jardinage","niveau":"expert"}]`, wantStatus: http.StatusOK},
+		{name: "modifier compétences sans header", method: http.MethodPut, path: "/api/users/1/skills", body: `[{"nom":"Jardinage","niveau":"expert"}]`, wantStatus: http.StatusUnauthorized},
+		{name: "modifier compétences interdit", method: http.MethodPut, path: "/api/users/1/skills", userID: "2", body: `[{"nom":"Jardinage","niveau":"expert"}]`, wantStatus: http.StatusForbidden},
+		{name: "stats utilisateur", method: http.MethodGet, path: "/api/users/1/stats", userID: "1", wantStatus: http.StatusOK},
+		{name: "stats utilisateur sans header", method: http.MethodGet, path: "/api/users/1/stats", wantStatus: http.StatusUnauthorized},
+		{name: "stats utilisateur interdit", method: http.MethodGet, path: "/api/users/1/stats", userID: "2", wantStatus: http.StatusForbidden},
 		{name: "méthode utilisateur refusée", method: http.MethodPatch, path: "/api/users", wantStatus: http.StatusMethodNotAllowed},
 		{name: "identifiant utilisateur invalide", method: http.MethodGet, path: "/api/users/abc", wantStatus: http.StatusBadRequest},
 		{name: "lister services", method: http.MethodGet, path: "/api/services", wantStatus: http.StatusOK},

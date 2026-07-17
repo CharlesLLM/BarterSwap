@@ -41,13 +41,13 @@ func (repository *userRepositoryStub) UpdateUser(_ context.Context, id int, inpu
 	return domain.User{ID: id, Pseudo: input.Pseudo}, nil
 }
 
-func (repository *userRepositoryStub) DeleteUser(context.Context, int) error { return nil }
-
 func (repository *userRepositoryStub) ListSkills(context.Context, int) ([]domain.Skill, error) {
 	return []domain.Skill{{Nom: domain.CategoryJardinage, Niveau: domain.SkillLevelBeginner}}, nil
 }
 
-func (repository *userRepositoryStub) ReplaceSkills(context.Context, int, []domain.Skill) error { return nil }
+func (repository *userRepositoryStub) ReplaceSkills(context.Context, int, []domain.Skill) error {
+	return nil
+}
 
 func TestUserService(testContext *testing.T) {
 	service := NewUserService(&userRepositoryStub{})
@@ -71,10 +71,6 @@ func TestUserService(testContext *testing.T) {
 	updated, err := service.Update(ctx, 1, domain.CreateUserInput{Pseudo: " Alice 2 "})
 	if err != nil || updated.Pseudo != "Alice 2" {
 		testContext.Fatalf("Update() = %+v, %v", updated, err)
-	}
-
-	if err := service.Delete(ctx, 1); err != nil {
-		testContext.Fatalf("Delete() error = %v", err)
 	}
 
 	skills, err := service.ListSkills(ctx, 1)

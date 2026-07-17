@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 func decodeJSON(responseWriter http.ResponseWriter, request *http.Request, destination any) bool {
@@ -26,14 +25,6 @@ func decodeJSON(responseWriter http.ResponseWriter, request *http.Request, desti
 	return true
 }
 
-func pathSegments(path, prefix string) []string {
-	value := strings.Trim(strings.TrimPrefix(path, prefix), "/")
-	if value == "" {
-		return nil
-	}
-	return strings.Split(value, "/")
-}
-
 func positiveInteger(value string) (int, bool) {
 	number, err := strconv.Atoi(value)
 	return number, err == nil && number > 0
@@ -45,4 +36,16 @@ func requireUserID(responseWriter http.ResponseWriter, request *http.Request) (i
 		writeError(responseWriter, http.StatusUnauthorized, "header X-User-ID invalide")
 	}
 	return userID, valid
+}
+
+func requireUserMatch(responseWriter http.ResponseWriter, request *http.Request, targetUserID int) bool {
+	userID, valid := requireUserID(responseWriter, request)
+	if !valid {
+		return false
+	}
+	if userID != targetUserID {
+		writeError(responseWriter, http.StatusForbidden, "action interdite")
+		return false
+	}
+	return true
 }

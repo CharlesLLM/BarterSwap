@@ -63,23 +63,13 @@ func (store Store) CreateService(ctx context.Context, providerID int, input doma
 }
 
 func (store Store) ListServices(ctx context.Context, filter domain.ServiceFilter) ([]domain.Service, error) {
-	query := `SELECT ` + serviceColumns + ` FROM services WHERE actif = TRUE`
-	args := []any{}
-	if filter.Categorie != "" {
-		args = append(args, filter.Categorie)
-		query += fmt.Sprintf(" AND categorie = $%d", len(args))
-	}
-	if filter.Ville != "" {
-		args = append(args, filter.Ville)
-		query += fmt.Sprintf(" AND ville = $%d", len(args))
-	}
-	if filter.Search != "" {
-		args = append(args, "%"+filter.Search+"%")
-		query += fmt.Sprintf(" AND (titre ILIKE $%d OR description ILIKE $%d)", len(args), len(args))
-	}
-	query += " ORDER BY created_at DESC"
-
-	rows, err := store.db.QueryContext(ctx, query, args...)
+	rows, err := store.db.QueryContext(ctx, `SELECT `+serviceColumns+`
+		FROM services
+		WHERE actif = TRUE
+			AND ($1 = '' OR categorie = $1)
+			AND ($2 = '' OR ville = $2)
+			AND ($3 = '' OR titre ILIKE '%' || $3 || '%' OR description ILIKE '%' || $3 || '%')
+		ORDER BY created_at DESC`, filter.Categorie, filter.Ville, filter.Search)
 	if err != nil {
 		return nil, fmt.Errorf("liste des services : %w", err)
 	}

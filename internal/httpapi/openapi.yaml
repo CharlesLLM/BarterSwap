@@ -18,14 +18,14 @@ paths:
       tags: [Utilisateurs]
       summary: Lister les utilisateurs
       responses:
-        '200':
+        "200":
           description: Liste des utilisateurs
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/User'
+                  $ref: "#/components/schemas/User"
     post:
       tags: [Utilisateurs]
       summary: Créer un utilisateur
@@ -34,85 +34,84 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUser'
+              $ref: "#/components/schemas/CreateUser"
       responses:
-        '201':
+        "201":
           description: Utilisateur créé avec 10 crédits de bienvenue
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '409':
-          $ref: '#/components/responses/Conflict'
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   /api/users/{id}:
     parameters:
-      - $ref: '#/components/parameters/ResourceID'
+      - $ref: "#/components/parameters/ResourceID"
     get:
       tags: [Utilisateurs]
       summary: Consulter un utilisateur
       responses:
-        '200':
+        "200":
           description: Profil public
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/User"
+        "404":
+          $ref: "#/components/responses/NotFound"
     put:
       tags: [Utilisateurs]
       summary: Modifier un utilisateur
+      security:
+        - UserID: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUser'
+              $ref: "#/components/schemas/CreateUser"
       responses:
-        '200':
+        "200":
           description: Utilisateur modifié
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-    delete:
-      tags: [Utilisateurs]
-      summary: Supprimer un utilisateur
-      responses:
-        '204':
-          description: Utilisateur supprimé
-        '404':
-          $ref: '#/components/responses/NotFound'
-
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /api/users/{id}/skills:
     parameters:
-      - $ref: '#/components/parameters/ResourceID'
+      - $ref: "#/components/parameters/ResourceID"
     get:
       tags: [Utilisateurs]
       summary: Lister les compétences d'un utilisateur
       responses:
-        '200':
+        "200":
           description: Compétences de l'utilisateur
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Skill'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                  $ref: "#/components/schemas/Skill"
+        "404":
+          $ref: "#/components/responses/NotFound"
     put:
       tags: [Utilisateurs]
       summary: Remplacer les compétences d'un utilisateur
+      security:
+        - UserID: []
       requestBody:
         required: true
         content:
@@ -120,38 +119,42 @@ paths:
             schema:
               type: array
               items:
-                $ref: '#/components/schemas/Skill'
+                $ref: "#/components/schemas/Skill"
       responses:
-        '200':
+        "200":
           description: Compétences remplacées
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Skill'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                  $ref: "#/components/schemas/Skill"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/users/{id}/reviews:
     get:
       tags: [Évaluations]
       summary: Lister les avis reçus par un utilisateur
       parameters:
-        - $ref: '#/components/parameters/ResourceID'
+        - $ref: "#/components/parameters/ResourceID"
       responses:
-        '200':
+        "200":
           description: Avis reçus par l'utilisateur
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Review'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                  $ref: "#/components/schemas/Review"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/services:
     get:
@@ -161,7 +164,7 @@ paths:
         - name: categorie
           in: query
           schema:
-            $ref: '#/components/schemas/Category'
+            $ref: "#/components/schemas/Category"
         - name: ville
           in: query
           schema:
@@ -171,16 +174,16 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Liste des services
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Service'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                  $ref: "#/components/schemas/Service"
+        "400":
+          $ref: "#/components/responses/BadRequest"
     post:
       tags: [Services]
       summary: Publier un service
@@ -191,34 +194,34 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateService'
+              $ref: "#/components/schemas/CreateService"
       responses:
-        '201':
+        "201":
           description: Service publié
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Service'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/Service"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /api/services/{id}:
     parameters:
-      - $ref: '#/components/parameters/ResourceID'
+      - $ref: "#/components/parameters/ResourceID"
     get:
       tags: [Services]
       summary: Consulter un service
       responses:
-        '200':
+        "200":
           description: Détail du service
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Service'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/Service"
+        "404":
+          $ref: "#/components/responses/NotFound"
     put:
       tags: [Services]
       summary: Modifier son service
@@ -229,54 +232,54 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateService'
+              $ref: "#/components/schemas/CreateService"
       responses:
-        '200':
+        "200":
           description: Service modifié
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Service'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/Service"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
     delete:
       tags: [Services]
       summary: Supprimer son service
       security:
         - UserID: []
       responses:
-        '204':
+        "204":
           description: Service supprimé
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/services/{id}/reviews:
     get:
       tags: [Évaluations]
       summary: Lister les avis liés à un service
       parameters:
-        - $ref: '#/components/parameters/ResourceID'
+        - $ref: "#/components/parameters/ResourceID"
       responses:
-        '200':
+        "200":
           description: Avis publiés pour le service
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Review'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                  $ref: "#/components/schemas/Review"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/exchanges:
     get:
@@ -288,20 +291,20 @@ paths:
         - name: status
           in: query
           schema:
-            $ref: '#/components/schemas/ExchangeStatus'
+            $ref: "#/components/schemas/ExchangeStatus"
       responses:
-        '200':
+        "200":
           description: Liste des échanges
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Exchange'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                  $ref: "#/components/schemas/Exchange"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
     post:
       tags: [Échanges]
       summary: Demander un service
@@ -312,44 +315,44 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateExchange'
+              $ref: "#/components/schemas/CreateExchange"
       responses:
-        '201':
+        "201":
           description: Demande créée avec le statut pending
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Exchange'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
+                $ref: "#/components/schemas/Exchange"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   /api/exchanges/{id}:
     parameters:
-      - $ref: '#/components/parameters/ResourceID'
+      - $ref: "#/components/parameters/ResourceID"
     get:
       tags: [Échanges]
       summary: Consulter un échange
       security:
         - UserID: []
       responses:
-        '200':
+        "200":
           description: Détail de l'échange
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Exchange'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/Exchange"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/exchanges/{id}/accept:
     put:
@@ -358,18 +361,18 @@ paths:
       security:
         - UserID: []
       parameters:
-        - $ref: '#/components/parameters/ResourceID'
+        - $ref: "#/components/parameters/ResourceID"
       responses:
-        '200':
-          $ref: '#/components/responses/ExchangeUpdated'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "200":
+          $ref: "#/components/responses/ExchangeUpdated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/exchanges/{id}/reject:
     put:
@@ -378,18 +381,18 @@ paths:
       security:
         - UserID: []
       parameters:
-        - $ref: '#/components/parameters/ResourceID'
+        - $ref: "#/components/parameters/ResourceID"
       responses:
-        '200':
-          $ref: '#/components/responses/ExchangeUpdated'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "200":
+          $ref: "#/components/responses/ExchangeUpdated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/exchanges/{id}/complete:
     put:
@@ -398,18 +401,18 @@ paths:
       security:
         - UserID: []
       parameters:
-        - $ref: '#/components/parameters/ResourceID'
+        - $ref: "#/components/parameters/ResourceID"
       responses:
-        '200':
-          $ref: '#/components/responses/ExchangeUpdated'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "200":
+          $ref: "#/components/responses/ExchangeUpdated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/exchanges/{id}/cancel:
     put:
@@ -418,18 +421,18 @@ paths:
       security:
         - UserID: []
       parameters:
-        - $ref: '#/components/parameters/ResourceID'
+        - $ref: "#/components/parameters/ResourceID"
       responses:
-        '200':
-          $ref: '#/components/responses/ExchangeUpdated'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "200":
+          $ref: "#/components/responses/ExchangeUpdated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/exchanges/{id}/review:
     post:
@@ -438,30 +441,30 @@ paths:
       security:
         - UserID: []
       parameters:
-        - $ref: '#/components/parameters/ResourceID'
+        - $ref: "#/components/parameters/ResourceID"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateReview'
+              $ref: "#/components/schemas/CreateReview"
       responses:
-        '201':
+        "201":
           description: Avis publié
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Review'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
+                $ref: "#/components/schemas/Review"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   /api/users/{id}/stats:
     get:
@@ -470,15 +473,16 @@ paths:
       security:
         - UserID: []
       parameters:
-        - $ref: '#/components/parameters/ResourceID'
+        - $ref: "#/components/parameters/ResourceID"
       responses:
-        '200':
+        "200":
+          description: Statistiques de l'utilisateur
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Review'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/UserStats"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
 components:
   securitySchemes:
@@ -502,37 +506,37 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     Unauthorized:
       description: Header X-User-ID absent ou invalide
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     Forbidden:
       description: Action interdite pour cet utilisateur
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     NotFound:
       description: Ressource introuvable
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     Conflict:
       description: Ressource déjà existante ou service déjà réservé
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     ExchangeUpdated:
       description: Statut de l'échange modifié
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Exchange'
+            $ref: "#/components/schemas/Exchange"
 
   schemas:
     Error:
@@ -584,12 +588,44 @@ components:
         skills:
           type: array
           items:
-            $ref: '#/components/schemas/Skill'
+            $ref: "#/components/schemas/Skill"
         credit_balance:
           type: integer
         created_at:
           type: string
           format: date-time
+
+    UserStats:
+      type: object
+      required:
+        [
+          user_id,
+          services_actifs,
+          echanges_completes,
+          credit_balance,
+          note_moyenne,
+          nb_avis,
+          total_gagne,
+          total_depense,
+        ]
+      properties:
+        user_id:
+          type: integer
+        services_actifs:
+          type: integer
+        echanges_completes:
+          type: integer
+        credit_balance:
+          type: integer
+        note_moyenne:
+          type: number
+          format: double
+        nb_avis:
+          type: integer
+        total_gagne:
+          type: integer
+        total_depense:
+          type: integer
 
     Category:
       type: string
@@ -619,7 +655,7 @@ components:
         description:
           type: string
         categorie:
-          $ref: '#/components/schemas/Category'
+          $ref: "#/components/schemas/Category"
         duree_minutes:
           type: integer
           minimum: 1
@@ -634,7 +670,7 @@ components:
 
     Service:
       allOf:
-        - $ref: '#/components/schemas/CreateService'
+        - $ref: "#/components/schemas/CreateService"
         - type: object
           required: [id, provider_id, actif, created_at]
           properties:
@@ -664,7 +700,8 @@ components:
 
     Exchange:
       type: object
-      required: [id, service_id, requester_id, owner_id, status, created_at, updated_at]
+      required:
+        [id, service_id, requester_id, owner_id, status, created_at, updated_at]
       properties:
         id:
           type: integer
@@ -675,7 +712,7 @@ components:
         owner_id:
           type: integer
         status:
-          $ref: '#/components/schemas/ExchangeStatus'
+          $ref: "#/components/schemas/ExchangeStatus"
         created_at:
           type: string
           format: date-time

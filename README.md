@@ -54,9 +54,8 @@ pour l'interface graphique, mais pas pour consulter le schéma OpenAPI brut.
 | -------- | ------------------------------ | ---------------------------------------------------------------------- | ---------------------------------------------------- |
 | `POST`   | `/api/users`                   | Créer un compte utilisateur                                            | Non                                                  |
 | `GET`    | `/api/users`                   | Lister les utilisateurs                                                | Non                                                  |
-| `GET`    | `/api/users/{id}`              | Consulter le profil public d'un utilisateur                            | Non (données privées visibles si `X-User-ID = {id}`) |
+| `GET`    | `/api/users/{id}`              | Consulter le profil d'un utilisateur                                   | Non                                                  |
 | `PUT`    | `/api/users/{id}`              | Modifier son profil                                                    | Oui (`X-User-ID = {id}`)                             |
-| `DELETE` | `/api/users/{id}`              | Supprimer un utilisateur                                               | Non                                                  |
 | `GET`    | `/api/users/{id}/skills`       | Lister les compétences d'un utilisateur                                | Non                                                  |
 | `PUT`    | `/api/users/{id}/skills`       | Définir les compétences d'un utilisateur                               | Oui (`X-User-ID = {id}`)                             |
 | `GET`    | `/api/users/{id}/reviews`      | Lister les avis reçus par un utilisateur                               | Non                                                  |

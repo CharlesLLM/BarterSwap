@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 func decodeJSON(responseWriter http.ResponseWriter, request *http.Request, destination any) bool {
@@ -24,14 +23,6 @@ func decodeJSON(responseWriter http.ResponseWriter, request *http.Request, desti
 	}
 
 	return true
-}
-
-func pathSegments(path, prefix string) []string {
-	value := strings.Trim(strings.TrimPrefix(path, prefix), "/")
-	if value == "" {
-		return nil
-	}
-	return strings.Split(value, "/")
 }
 
 func positiveInteger(value string) (int, bool) {

@@ -6,53 +6,6 @@ import (
 	"github.com/CharlesLLM/BarterSwap/internal/domain"
 )
 
-func (handler Handler) exchangesHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	switch request.Method {
-	case http.MethodGet:
-		handler.listExchanges(responseWriter, request)
-	case http.MethodPost:
-		handler.createExchange(responseWriter, request)
-	default:
-		methodNotAllowed(responseWriter, http.MethodGet, http.MethodPost)
-	}
-}
-
-func (handler Handler) exchangeHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	parts := pathSegments(request.URL.Path, "/api/exchanges/")
-	if len(parts) == 0 || len(parts) > 2 {
-		writeError(responseWriter, http.StatusNotFound, "route introuvable")
-		return
-	}
-
-	exchangeID, valid := positiveInteger(parts[0])
-	if !valid {
-		writeError(responseWriter, http.StatusBadRequest, "identifiant invalide")
-		return
-	}
-	if len(parts) == 1 {
-		if request.Method != http.MethodGet {
-			methodNotAllowed(responseWriter, http.MethodGet)
-			return
-		}
-		handler.getExchange(responseWriter, request, exchangeID)
-		return
-	}
-	if parts[1] == "review" {
-		if request.Method != http.MethodPost {
-			methodNotAllowed(responseWriter, http.MethodPost)
-			return
-		}
-		handler.createReview(responseWriter, request, exchangeID)
-		return
-	}
-
-	if request.Method != http.MethodPut {
-		methodNotAllowed(responseWriter, http.MethodPut)
-		return
-	}
-	handler.updateExchangeStatus(responseWriter, request, exchangeID, parts[1])
-}
-
 func (handler Handler) createExchange(responseWriter http.ResponseWriter, request *http.Request) {
 	userID, valid := requireUserID(responseWriter, request)
 	if !valid {
@@ -96,6 +49,22 @@ func (handler Handler) getExchange(responseWriter http.ResponseWriter, request *
 		return
 	}
 	writeJSON(responseWriter, http.StatusOK, exchange)
+}
+
+func (handler Handler) acceptExchange(responseWriter http.ResponseWriter, request *http.Request, exchangeID int) {
+	handler.updateExchangeStatus(responseWriter, request, exchangeID, "accept")
+}
+
+func (handler Handler) rejectExchange(responseWriter http.ResponseWriter, request *http.Request, exchangeID int) {
+	handler.updateExchangeStatus(responseWriter, request, exchangeID, "reject")
+}
+
+func (handler Handler) completeExchange(responseWriter http.ResponseWriter, request *http.Request, exchangeID int) {
+	handler.updateExchangeStatus(responseWriter, request, exchangeID, "complete")
+}
+
+func (handler Handler) cancelExchange(responseWriter http.ResponseWriter, request *http.Request, exchangeID int) {
+	handler.updateExchangeStatus(responseWriter, request, exchangeID, "cancel")
 }
 
 func (handler Handler) updateExchangeStatus(responseWriter http.ResponseWriter, request *http.Request, exchangeID int, action string) {
